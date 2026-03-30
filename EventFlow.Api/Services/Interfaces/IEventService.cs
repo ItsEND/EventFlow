@@ -1,13 +1,12 @@
-﻿using EventFlow.Api.Contracts;
-using EventFlow.Api.Models;
+﻿using EventFlow.Api.Models;
 
 namespace EventFlow.Api.Services.Interfaces;
 
 public interface IEventService
 {
-    List<EventResponse> GetEvents();
-    EventResponse GetEvent(Guid id);
-    EventResponse AddEvent(EventRequest newEvent);
-    bool ChangeEvent(Guid id, UpdateEventRequest newEvent);
+    List<Event> GetEvents();
+    Event GetEvent(Guid id);
+    Event AddEvent(Event newEvent);
+    bool ChangeEvent(Guid id, Event newEvent);
     bool RemoveEvent(Guid id);
 }

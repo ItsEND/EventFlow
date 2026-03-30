@@ -1,7 +1,7 @@
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
-using System.Reflection;
 using Serilog;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 

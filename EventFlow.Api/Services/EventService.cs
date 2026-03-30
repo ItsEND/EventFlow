@@ -1,64 +1,33 @@
 ﻿using EventFlow.Api.Models;
-using EventFlow.Api.Contracts;
 using EventFlow.Api.Services.Interfaces;
+
 namespace EventFlow.Api.Services;
 
 public class EventService() : IEventService
 {
     public static List<Event> Events { get; set; } = [];
 
-    public List<EventResponse> GetEvents()
+    public List<Event> GetEvents()
     {
-        List<EventResponse> responses = new List<EventResponse>();
-
-        if (Events != null)
-        {
-            foreach (var ev in Events)
-            {
-                responses.Add(
-                new EventResponse
-                {
-                    Id = ev.Id,
-                    Title = ev.Title,
-                    Description = ev.Description,
-                    StartAt = ev.StartAt,
-                    EndAt = ev.EndAt,
-                });
-
-            }
-
-        }
-        return responses;
-
-
+        return Events;
     }
-    public EventResponse GetEvent(Guid id)
+
+    public Event GetEvent(Guid id)
     {
         var ev = Events.FirstOrDefault(e => e.Id == id);
-
-        if (ev == null)
-        {
-            return null;
-        }
-
-        var response = CreateEventResponse(ev);
-        return response;
+        return ev;
     }
 
-    public EventResponse AddEvent(EventRequest newEvent)
+    public Event AddEvent(Event newEvent)
     {
-        var ev = CreateEvent(newEvent);
-        Events.Add(ev);
+        Events.Add(newEvent);
 
-        var response = CreateEventResponse(ev);
-
-        return response;
-
+        return newEvent;
     }
 
-    public bool ChangeEvent(Guid id, UpdateEventRequest newEvent)
+    public bool ChangeEvent(Guid id, Event newEvent)
     {
-        var ev = GetEventById(id);
+        var ev = GetEvent(id);
 
         if (ev != null)
         {
@@ -74,7 +43,7 @@ public class EventService() : IEventService
 
     public bool RemoveEvent(Guid id)
     {
-        var ev = GetEventById(id);
+        var ev = GetEvent(id);
 
         if (ev != null)
         {
@@ -84,41 +53,4 @@ public class EventService() : IEventService
 
         return false;
     }
-
-    private Event GetEventById(Guid id)
-    {
-        var ev = Events.FirstOrDefault(e => e.Id == id);
-
-        if (ev == null)
-        {
-            return null;
-        }
-
-        return ev;
-    }
-    
-    private EventResponse CreateEventResponse(Event ev)
-    {
-        return new EventResponse
-        {
-            Id = ev.Id,
-            Title = ev.Title,
-            Description = ev.Description,
-            StartAt = ev.StartAt,
-            EndAt = ev.EndAt,
-        };
-    }
-
-    private Event CreateEvent(EventRequest request)
-    {
-        return new Event
-        {
-            Id = Guid.NewGuid(),
-            Title = request.Title,
-            Description = request.Description,
-            StartAt = request.StartAt,
-            EndAt = request.EndAt,
-        };
-    }
-    
 }

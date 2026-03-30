@@ -1,8 +1,7 @@
-﻿using EventFlow.Api.Models;
-using EventFlow.Api.Contracts;
+﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-
 
 namespace EventFlow.Api.Controllers;
 
@@ -15,24 +14,54 @@ public class EventController(IEventService _eventService) : ControllerBase
     {
         var events = _eventService.GetEvents();
 
-        return Ok(events);
+        List<EventResponse> responses = [];
+        if (events != null)
+        {
+            foreach (var ev in events)
+            {
+                var response = CreateEventResponse(ev);
+                responses.Add(response);
+            }
+        }
+        return Ok(responses);
     }
 
     [HttpGet("{id:Guid}")]
     public ActionResult<EventResponse> GetEvent(Guid id)
     {
         var ev = _eventService.GetEvent(id);
-        return ev == null ? (ActionResult<EventResponse>)NotFound() : (ActionResult<EventResponse>)Ok(ev);
+
+        if (ev == null)
+        {
+            return (ActionResult<EventResponse>)NotFound();
+        }
+        var response = CreateEventResponse(ev);
+
+        return (ActionResult<EventResponse>)Ok(response);
     }
 
+    //TODO: из контроллера передать в сервис модель,
+    //её передать в сервис там создать guid
+    //и в контроллер вернуть event и
+    //в нем уже переделать его под dto response
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult<EventResponse> Post([FromBody] EventRequest newEvent)
     {
-        _eventService.AddEvent(newEvent);
+        var ev = new Event
+        {
+            Id = Guid.NewGuid(),
+            Title = newEvent.Title,
+            Description = newEvent.Description,
+            StartAt = newEvent.StartAt,
+            EndAt = newEvent.EndAt,
+        };
+        _eventService.AddEvent(ev);
 
-        return CreatedAtAction(nameof(GetEvent), newEvent);
+        var response = CreateEventResponse(ev);
+
+        return CreatedAtAction(nameof(GetEvent), response);
     }
 
     [HttpPut("{id:Guid}")]
@@ -42,8 +71,9 @@ public class EventController(IEventService _eventService) : ControllerBase
         {
             return BadRequest();
         }
+        var ev = CreateEvent(newEvent);
 
-        return _eventService.ChangeEvent(id, newEvent) ? NoContent() : NotFound();
+        return _eventService.ChangeEvent(id, ev) ? NoContent() : NotFound();
     }
 
     [HttpDelete("{id:Guid}")]
@@ -51,4 +81,22 @@ public class EventController(IEventService _eventService) : ControllerBase
     {
         return _eventService.RemoveEvent(id) ? NoContent() : NotFound();
     }
+
+    private EventResponse CreateEventResponse(Event ev) => new()
+    {
+        Id = ev.Id,
+        Title = ev.Title,
+        Description = ev.Description,
+        StartAt = ev.StartAt,
+        EndAt = ev.EndAt,
+    };
+
+    private Event CreateEvent(UpdateEventRequest request) => new()
+    {
+        Id = request.Id,
+        Title = request.Title,
+        Description = request.Description,
+        StartAt = request.StartAt,
+        EndAt = request.EndAt,
+    };
 }

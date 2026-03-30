@@ -9,14 +9,10 @@ public class NotPastDateAttribute : ValidationAttribute
         {
             return ValidationResult.Success; // null через Required проверяется
         }
-        if (value is DateTime date)
-        {
-            if (date.Date < DateTime.Today)
-            {
-                return new ValidationResult(ErrorMessage ?? "Дата события не может быть меньше текущей даты");
-            }
-            return ValidationResult.Success;
-        }
-        return new ValidationResult("Можно использовать только дату");
+        return value is DateTime date
+            ? date.Date < DateTime.Today
+                ? new ValidationResult(ErrorMessage ?? "Дата события не может быть меньше текущей даты")
+                : ValidationResult.Success
+            : new ValidationResult("Можно использовать только дату");
     }
 }

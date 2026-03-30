@@ -38,17 +38,11 @@ public class NotDateEarlierAttribute : ValidationAttribute
             return new ValidationResult("Атрибут можно использовать только для DateTime.");
         }
 
-        if (otherValue is not DateTime otherDate)
-        {
-            return new ValidationResult($"Свойство '{_otherPropertyName}' не является DateTime.");
-        }
-        if (currentDate.Date < otherDate.Date)
-
-        {
-            return new ValidationResult(ErrorMessage ?? "Дата события не может быть меньше текущей даты");
-        }
-
-        return ValidationResult.Success;
+        return otherValue is not DateTime otherDate
+            ? new ValidationResult($"Свойство '{_otherPropertyName}' не является DateTime.")
+            : currentDate.Date < otherDate.Date
+            ? new ValidationResult(ErrorMessage ?? "Дата события не может быть меньше текущей даты")
+            : ValidationResult.Success;
     }
 }
 
