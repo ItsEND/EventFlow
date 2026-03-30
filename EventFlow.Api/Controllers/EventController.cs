@@ -1,15 +1,17 @@
 ﻿using EventFlow.Api.Models;
+using EventFlow.Api.Contracts;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace EventFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EventController(IEventService _eventService, ILogger<EventController> _logger) : ControllerBase
+public class EventController(IEventService _eventService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<List<Event>> GetAllEvents()
+    public ActionResult<List<EventResponse>> GetAllEvents()
     {
         var events = _eventService.GetEvents();
 
@@ -17,16 +19,16 @@ public class EventController(IEventService _eventService, ILogger<EventControlle
     }
 
     [HttpGet("{id:Guid}")]
-    public ActionResult<Event> GetEvent(Guid id)
+    public ActionResult<EventResponse> GetEvent(Guid id)
     {
         var ev = _eventService.GetEvent(id);
-        return ev == null ? (ActionResult<Event>)NotFound() : (ActionResult<Event>)Ok(ev);
+        return ev == null ? (ActionResult<EventResponse>)NotFound() : (ActionResult<EventResponse>)Ok(ev);
     }
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult<Event> Post([FromBody] Event newEvent)
+    public ActionResult<EventResponse> Post([FromBody] EventRequest newEvent)
     {
         _eventService.AddEvent(newEvent);
 
@@ -34,7 +36,7 @@ public class EventController(IEventService _eventService, ILogger<EventControlle
     }
 
     [HttpPut("{id:Guid}")]
-    public IActionResult Put(Guid id, [FromBody] Event newEvent)
+    public IActionResult Put(Guid id, [FromBody] UpdateEventRequest newEvent)
     {
         if (id != newEvent.Id)
         {
