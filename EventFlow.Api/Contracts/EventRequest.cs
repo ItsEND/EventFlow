@@ -3,19 +3,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api.Contracts;
 
-public class EventRequest
+public record class EventRequest
 {
     [Required(AllowEmptyStrings = false, ErrorMessage = "Название обязательно для заполнения")]
-    public required string Title { get; set; }
+    public required string Title { get; init; }
 
-    [StringLength(400, MinimumLength = 2, ErrorMessage = "Минимальная длина описания 2 символа, максимальная длина не может превышать 400 символов")]
-    public string? Description { get; set; }
+    [StringLength(400, ErrorMessage = "Максимальная длина описания не может превышать 400 символов")]
+    public string? Description { get; init; }
 
-    [Required]
-    [NotPastDate(ErrorMessage = "Дата должна быть сегодня или позже")]
-    public required DateTime StartAt { get; set; }
+    [Required(ErrorMessage = "Дата начала обязательна")]
+    public required DateTime StartAt { get; init; }
 
-    [Required]
-    [NotDateEarlier(nameof(StartAt), ErrorMessage = "Дата окончания события не может быть меньше даты начала события")]
-    public required DateTime EndAt { get; set; }
+    [Required(ErrorMessage = "Дата окончания обязательна")]
+    [EndAfterStart(nameof(StartAt), ErrorMessage = "Дата окончания должна быть позже даты начала")]
+    public required DateTime EndAt { get; init; }
 }

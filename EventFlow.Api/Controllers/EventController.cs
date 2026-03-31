@@ -6,62 +6,53 @@ using Microsoft.AspNetCore.Mvc;
 namespace EventFlow.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("events")]
 public class EventController(IEventService _eventService) : ControllerBase
 {
     [HttpGet]
     public ActionResult<List<EventResponse>> GetAllEvents()
     {
-        var events = _eventService.GetEvents();
+        var events = _eventService.GetEvents().Select(ToResponse).ToList();
 
-        List<EventResponse> responses = [];
-        if (events != null)
-        {
-            foreach (var ev in events)
-            {
-                var response = CreateEventResponse(ev);
-                responses.Add(response);
-            }
-        }
-        return Ok(responses);
+        return Ok(events);
     }
 
     [HttpGet("{id:Guid}")]
-    public ActionResult<EventResponse> GetEvent(Guid id)
+    public ActionResult<EventResponse> GetEventById(Guid id)
     {
         var ev = _eventService.GetEvent(id);
 
-        if (ev == null)
-        {
-            return (ActionResult<EventResponse>)NotFound();
-        }
-        var response = CreateEventResponse(ev);
-
-        return (ActionResult<EventResponse>)Ok(response);
+        return ev is null ? (ActionResult<EventResponse>)NotFound() : (ActionResult<EventResponse>)Ok(ToResponse(ev));
     }
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult<EventResponse> Post([FromBody] EventRequest newEvent)
+    public ActionResult<EventResponse> CreateEvent([FromBody] EventRequest request)
     {
-        var ev = CreateEvent(newEvent);
+        var created = _eventService.AddEvent(new CreateEventModel
+        {
+            Title = request.Title,
+            Description = request.Description,
+            StartAt = request.StartAt,
+            EndAt = request.EndAt
+        });
 
-        var response = CreateEventResponse(_eventService.AddEvent(ev));
+        var response = ToResponse(created);
 
-        return CreatedAtAction(nameof(GetEvent), response);
+        return CreatedAtAction(nameof(GetEventById), new { id = response.Id }, response);
     }
 
     [HttpPut("{id:Guid}")]
-    public IActionResult Put(Guid id, [FromBody] EventRequest newEvent)
+    public IActionResult UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
-        if (id != newEvent.Id)
+        var updated = _eventService.UpdateEvent(id, new UpdateEventModel
         {
-            return BadRequest();
-        }
-        var ev = CreateEvent(newEvent);
+            Title = request.Title,
+            Description = request.Description,
+            StartAt = request.StartAt,
+            EndAt = request.EndAt
+        });
 
-        return _eventService.ChangeEvent(id, ev) ? NoContent() : NotFound();
+        return updated is null ? NotFound() : Ok(ToResponse(updated));
     }
 
     [HttpDelete("{id:Guid}")]
@@ -70,28 +61,13 @@ public class EventController(IEventService _eventService) : ControllerBase
         return _eventService.RemoveEvent(id) ? NoContent() : NotFound();
     }
 
-    private EventResponse CreateEventResponse(Event ev) => new()
+    private static EventResponse ToResponse(Event ev) => new()
     {
         Id = ev.Id,
         Title = ev.Title,
         Description = ev.Description,
         StartAt = ev.StartAt,
-        EndAt = ev.EndAt,
-    };
-
-    private UpdateEventRequest CreateEvent( EventRequest request) => new()
-    {
-        Title = request.Title,
-        Description = request.Description,
-        StartAt = request.StartAt,
-        EndAt = request.EndAt,
-    };
-
-    private CreateEventModel CreateEvent(EventRequest request) => new()
-    {
-        Title = request.Title,
-        Description = request.Description,
-        StartAt = request.StartAt,
-        EndAt = request.EndAt,
+        EndAt = ev.EndAt
     };
 }
+

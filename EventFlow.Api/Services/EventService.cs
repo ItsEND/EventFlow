@@ -1,22 +1,20 @@
-﻿using EventFlow.Api.Contracts;
-using EventFlow.Api.Models;
+﻿using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
 
 namespace EventFlow.Api.Services;
 
 public class EventService() : IEventService
 {
-    public static List<Event> Events { get; set; } = [];
+    private List<Event> _events = [];
 
     public List<Event> GetEvents()
     {
-        return Events;
+        return _events;
     }
 
-    public Event GetEvent(Guid id)
+    public Event? GetEvent(Guid id)
     {
-        var ev = Events.FirstOrDefault(e => e.Id == id);
-        return ev;
+        return _events.FirstOrDefault(e => e.Id == id);
     }
 
     public Event AddEvent(CreateEventModel newEvent)
@@ -30,36 +28,38 @@ public class EventService() : IEventService
             EndAt = newEvent.EndAt,
         };
 
-        Events.Add(ev);
+        _events.Add(ev);
 
         return ev;
     }
 
-    public Event ChangeEvent(Guid id, UpdateEventRequest newEvent)
+    public Event? UpdateEvent(Guid id, UpdateEventModel updatedEvent)
     {
         var ev = GetEvent(id);
 
-        if (ev != null)
+        if (ev is null)
         {
-            ev.Title = newEvent.Title;
-            ev?.Description = newEvent.Description;
-            ev.StartAt = newEvent.StartAt;
-            ev.EndAt = newEvent.EndAt;
-
-            return ev;
+            return null;
         }
-        return null;
+
+        ev.Title = updatedEvent.Title;
+        ev.Description = updatedEvent.Description;
+        ev.StartAt = updatedEvent.StartAt;
+        ev.EndAt = updatedEvent.EndAt;
+
+        return ev;
     }
 
     public bool RemoveEvent(Guid id)
     {
         var ev = GetEvent(id);
 
-        if (ev != null)
+        if (ev is null)
         {
-            Events.Remove(ev);
-            return true;
+            return false;
         }
-        return false;
+
+        _events.Remove(ev);
+        return true;
     }
 }
