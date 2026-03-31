@@ -1,4 +1,5 @@
-﻿using EventFlow.Api.Models;
+﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
 
 namespace EventFlow.Api.Services;
@@ -18,14 +19,23 @@ public class EventService() : IEventService
         return ev;
     }
 
-    public Event AddEvent(Event newEvent)
+    public Event AddEvent(CreateEventModel newEvent)
     {
-        Events.Add(newEvent);
+        var ev = new Event
+        {
+            Id = Guid.NewGuid(),
+            Title = newEvent.Title,
+            Description = newEvent.Description,
+            StartAt = newEvent.StartAt,
+            EndAt = newEvent.EndAt,
+        };
 
-        return newEvent;
+        Events.Add(ev);
+
+        return ev;
     }
 
-    public bool ChangeEvent(Guid id, Event newEvent)
+    public Event ChangeEvent(Guid id, UpdateEventRequest newEvent)
     {
         var ev = GetEvent(id);
 
@@ -36,9 +46,9 @@ public class EventService() : IEventService
             ev.StartAt = newEvent.StartAt;
             ev.EndAt = newEvent.EndAt;
 
-            return true;
+            return ev;
         }
-        return false;
+        return null;
     }
 
     public bool RemoveEvent(Guid id)
@@ -50,7 +60,6 @@ public class EventService() : IEventService
             Events.Remove(ev);
             return true;
         }
-
         return false;
     }
 }

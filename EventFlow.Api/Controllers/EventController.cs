@@ -40,32 +40,20 @@ public class EventController(IEventService _eventService) : ControllerBase
         return (ActionResult<EventResponse>)Ok(response);
     }
 
-    //TODO: из контроллера передать в сервис модель,
-    //её передать в сервис там создать guid
-    //и в контроллер вернуть event и
-    //в нем уже переделать его под dto response
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public ActionResult<EventResponse> Post([FromBody] EventRequest newEvent)
     {
-        var ev = new Event
-        {
-            Id = Guid.NewGuid(),
-            Title = newEvent.Title,
-            Description = newEvent.Description,
-            StartAt = newEvent.StartAt,
-            EndAt = newEvent.EndAt,
-        };
-        _eventService.AddEvent(ev);
+        var ev = CreateEvent(newEvent);
 
-        var response = CreateEventResponse(ev);
+        var response = CreateEventResponse(_eventService.AddEvent(ev));
 
         return CreatedAtAction(nameof(GetEvent), response);
     }
 
     [HttpPut("{id:Guid}")]
-    public IActionResult Put(Guid id, [FromBody] UpdateEventRequest newEvent)
+    public IActionResult Put(Guid id, [FromBody] EventRequest newEvent)
     {
         if (id != newEvent.Id)
         {
@@ -91,9 +79,16 @@ public class EventController(IEventService _eventService) : ControllerBase
         EndAt = ev.EndAt,
     };
 
-    private Event CreateEvent(UpdateEventRequest request) => new()
+    private UpdateEventRequest CreateEvent( EventRequest request) => new()
     {
-        Id = request.Id,
+        Title = request.Title,
+        Description = request.Description,
+        StartAt = request.StartAt,
+        EndAt = request.EndAt,
+    };
+
+    private CreateEventModel CreateEvent(EventRequest request) => new()
+    {
         Title = request.Title,
         Description = request.Description,
         StartAt = request.StartAt,
