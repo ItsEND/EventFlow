@@ -3,15 +3,28 @@ using System.Reflection;
 
 namespace EventFlow.Api.Models.Validator;
 
+/// <summary>
+/// Проверяет, что значение конечной даты больше значения начальной даты.
+/// </summary>
 public class EndAfterStartAttribute : ValidationAttribute
 {
     private readonly string _startPropertyName;
 
+    /// <summary>
+    /// Инициализирует атрибут проверки конечной даты относительно начальной.
+    /// </summary>
+    /// <param name="startPropertyName">Имя свойства с начальной датой.</param>
     public EndAfterStartAttribute(string startPropertyName)
     {
         _startPropertyName = startPropertyName;
     }
 
+    /// <summary>
+    /// Выполняет проверку значения свойства.
+    /// </summary>
+    /// <param name="value">Значение конечной даты.</param>
+    /// <param name="validationContext">Контекст валидации.</param>
+    /// <returns>Результат валидации.</returns>
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is null)

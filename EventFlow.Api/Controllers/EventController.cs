@@ -5,10 +5,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EventFlow.Api.Controllers;
 
+/// <summary>
+/// Контроллер для управления мероприятиями.
+/// </summary>
+/// <param name="_eventService">Сервис для работы с мероприятиями.</param>
 [ApiController]
 [Route("events")]
 public class EventController(IEventService _eventService) : ControllerBase
 {
+    /// <summary>
+    /// Возвращает список всех мероприятий.
+    /// </summary>
+    /// <returns>Список мероприятий.</returns>
     [HttpGet]
     public ActionResult<List<EventResponse>> GetAllEvents()
     {
@@ -17,6 +25,11 @@ public class EventController(IEventService _eventService) : ControllerBase
         return Ok(events);
     }
 
+    /// <summary>
+    /// Возвращает мероприятие по идентификатору.
+    /// </summary>
+    /// <param name="id">Идентификатор мероприятия.</param>
+    /// <returns>Найденное мероприятие.</returns>
     [HttpGet("{id:Guid}")]
     public ActionResult<EventResponse> GetEventById(Guid id)
     {
@@ -25,6 +38,11 @@ public class EventController(IEventService _eventService) : ControllerBase
         return ev is null ? (ActionResult<EventResponse>)NotFound() : (ActionResult<EventResponse>)Ok(ToResponse(ev));
     }
 
+    /// <summary>
+    /// Создает новое мероприятие.
+    /// </summary>
+    /// <param name="request">Данные для создания мероприятия.</param>
+    /// <returns>Созданное мероприятие.</returns>
     [HttpPost]
     public ActionResult<EventResponse> CreateEvent([FromBody] EventRequest request)
     {
@@ -41,6 +59,12 @@ public class EventController(IEventService _eventService) : ControllerBase
         return CreatedAtAction(nameof(GetEventById), new { id = response.Id }, response);
     }
 
+    /// <summary>
+    /// Обновляет мероприятие по идентификатору.
+    /// </summary>
+    /// <param name="id">Идентификатор мероприятия.</param>
+    /// <param name="request">Новые данные мероприятия.</param>
+    /// <returns>Обновленное мероприятие.</returns>
     [HttpPut("{id:Guid}")]
     public IActionResult UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
@@ -55,6 +79,12 @@ public class EventController(IEventService _eventService) : ControllerBase
         return updated is null ? NotFound() : Ok(ToResponse(updated));
     }
 
+
+    /// <summary>
+    /// Удаляет мероприятие по идентификатору.
+    /// </summary>
+    /// <param name="id">Идентификатор мероприятия.</param>
+    /// <returns>Результат удаления мероприятия.</returns>
     [HttpDelete("{id:Guid}")]
     public IActionResult Delete(Guid id)
     {
