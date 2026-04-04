@@ -1,0 +1,35 @@
+﻿using EventFlow.Api.Models.Validator;
+using System.ComponentModel.DataAnnotations;
+
+namespace EventFlow.Api.Contracts;
+
+/// <summary>
+/// Запрос на обновление мероприятия.
+/// </summary>
+public record class UpdateEventRequest
+{
+    /// <summary>
+    /// Название мероприятия.
+    /// </summary>
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Название обязательно для заполнения")]
+    public required string Title { get; init; }
+
+    /// <summary>
+    /// Описание мероприятия.
+    /// </summary>
+    [StringLength(400, ErrorMessage = "Максимальная длина описания не может превышать 400 символов")]
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// Дата и время начала мероприятия.
+    /// </summary>
+    [Required(ErrorMessage = "Дата начала обязательна")]
+    public required DateTime StartAt { get; init; }
+
+    /// <summary>
+    /// Дата и время окончания мероприятия.
+    /// </summary>
+    [Required(ErrorMessage = "Дата окончания обязательна")]
+    [EndAfterStart(nameof(StartAt), ErrorMessage = "Дата окончания должна быть позже даты начала")]
+    public required DateTime EndAt { get; init; }
+}
