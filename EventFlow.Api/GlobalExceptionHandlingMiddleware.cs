@@ -30,52 +30,55 @@ public class GlobalExceptionHandlingMiddleware
     {
         _logger.LogError(
               ex,
-              "Unhandled exception. Method={Method}, Path={Path}, RequestId={RequestId}",
+              "Unhandled exception. Method={Method}, Path={Path}, TraceId={TraceId}",
               httpContext.Request.Method,
               httpContext.Request.Path,
-              httpContext.Request.Headers["x-request-id"]
+              httpContext.TraceIdentifier
               );
 
         if (httpContext.Response.HasStarted)
         {
-            return;
+            _logger.LogWarning(
+                "Cannot write error response because the response already started TraceId = {TraceId}", httpContext.TraceIdentifier);
+            throw ex;
         }
 
-        var statusCode = MapStatusCode(ex);
-
+        var (statusCode, title, detail) = MapException(ex);
+        
+        httpContext.Response.Clear();
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";
-        var detail = statusCode == StatusCodes.Status500InternalServerError
-            ? "Внутренняя ошибка сервера."
-            : ex.Message;
-
 
         var error = new ProblemDetails
         {
             Status = statusCode,
-            Title = GetTitle(statusCode),
-            Detail = ex.Message
+            Title = title,
+            Detail = detail,
+            Type = GetTypeUri(statusCode),
+            Instance = httpContext.Request.Path
+
+
         };
 
         await httpContext.Response.WriteAsJsonAsync(error);
 
     }
 
-    private static int MapStatusCode(Exception ex) =>
+    private static (int statusCode, string title, string detail) MapException(Exception ex) =>
         ex switch
         {
-            ValidationException ve => StatusCodes.Status400BadRequest,
-            NotFoundException nfe => StatusCodes.Status404NotFound,
-            _ => StatusCodes.Status500InternalServerError,
+            ValidationException ve => (StatusCodes.Status400BadRequest, "Некорректный запрос", ve.Message),
+            NotFoundException nfe => (StatusCodes.Status404NotFound, "Ресурс не найден", nfe.Message),
+            _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка"),
 
         };
 
-    private static string GetTitle(int statusCode) =>
+    private static string GetTypeUri(int statusCode) =>
         statusCode switch
         {
-            StatusCodes.Status400BadRequest => "Bad Request",
-            StatusCodes.Status404NotFound => "NotFound",
-            _ => "Internal Server Error"
+            StatusCodes.Status400BadRequest => "https://httpstatuses.com/400",
+            StatusCodes.Status404NotFound => "https://httpstatuses.com/404",
+            _ => "https://httpstatuses.com/500"
         };
-    
+
 }

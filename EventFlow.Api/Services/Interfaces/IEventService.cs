@@ -1,4 +1,5 @@
-﻿using EventFlow.Api.Models;
+﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Models;
 namespace EventFlow.Api.Services.Interfaces;
 /// <summary>
 /// Предоставляет методы для управления мероприятиями.
@@ -6,24 +7,29 @@ namespace EventFlow.Api.Services.Interfaces;
 public interface IEventService
 {
     /// <summary>
-    /// Возвращает все мероприятия.
+    /// 
     /// </summary>
-    /// <returns>Список всех мероприятий.</returns>
-    List<Event> GetEvents();
+    /// <param name="pageNumber"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="title"></param>
+    /// <param name="dateFrom"></param>
+    /// <param name="dateTo"></param>
+    /// <returns></returns>
+    public PaginatedResult<Event> GetEvents(int pageNumber, int pageSize, string? title = null, DateTime? dateFrom = null, DateTime? dateTo = null);
 
     /// <summary>
     /// Возвращает мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Найденное мероприятие или null, если мероприятие не существует.</returns>
-    Event? GetEvent(Guid id);
+    public Event GetEvent(Guid id);
 
     /// <summary>
     /// Создает новое мероприятие.
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    Event AddEvent(CreateEventModel newEvent);
+    public Event AddEvent(CreateEventModel newEvent);
 
     /// <summary>
     /// Обновляет существующее мероприятие.
@@ -31,12 +37,11 @@ public interface IEventService
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="updatedEvent">Новые данные мероприятия.</param>
     /// <returns>Обновленное мероприятие или null, если мероприятие не найдено.</returns>
-    Event? UpdateEvent(Guid id, UpdateEventModel updatedEvent);
+    public Event UpdateEvent(Guid id, UpdateEventModel updatedEvent);
 
     /// <summary>
     /// Удаляет мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
-    /// <returns>true, если мероприятие удалено; иначе false.</returns>
-    bool RemoveEvent(Guid id);
+    public void RemoveEvent(Guid id);
 }

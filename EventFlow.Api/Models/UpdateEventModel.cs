@@ -8,7 +8,7 @@ public record class UpdateEventModel
     /// <summary>
     /// Название мероприятия.
     /// </summary>
-    public string? Title { get; init; }
+    public string Title { get; init; }
 
     /// <summary>
     /// Описание мероприятия.

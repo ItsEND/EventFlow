@@ -14,15 +14,17 @@ namespace EventFlow.Api.Controllers;
 public class EventController(IEventService _eventService) : ControllerBase
 {
     /// <summary>
-    /// Возвращает список всех мероприятий.
+    /// 
     /// </summary>
-    /// <returns>Список мероприятий.</returns>
+    /// <param name="query"></param>
+    /// <returns></returns>
     [HttpGet]
-    public ActionResult<List<EventResponse>> GetAllEvents()
+    public ActionResult<PaginatedResult<EventResponse>> GetPaginatedEvents([FromQuery] GetEventsQuery query)
     {
-        var events = _eventService.GetEvents().Select(ToResponse).ToList();
+        var paginatedEvents = _eventService.GetEvents(query.Page, query.PageSize, query.Title, query.From, query.To);
+        var result = PaginatedEventToResponse(paginatedEvents);
 
-        return Ok(events);
+        return Ok(result);
     }
 
     /// <summary>
@@ -30,12 +32,12 @@ public class EventController(IEventService _eventService) : ControllerBase
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Найденное мероприятие.</returns>
-    [HttpGet("{id:Guid}")]
+    [HttpGet("{id:guid}")]
     public ActionResult<EventResponse> GetEventById(Guid id)
     {
         var ev = _eventService.GetEvent(id);
 
-        return ev is null ? (ActionResult<EventResponse>)NotFound() : (ActionResult<EventResponse>)Ok(ToResponse(ev));
+        return (ActionResult<EventResponse>)Ok(ToResponse(ev));
     }
 
     /// <summary>
@@ -65,7 +67,7 @@ public class EventController(IEventService _eventService) : ControllerBase
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="request">Новые данные мероприятия.</param>
     /// <returns>Обновленное мероприятие.</returns>
-    [HttpPut("{id:Guid}")]
+    [HttpPut("{id:guid}")]
     public IActionResult UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
         var updated = _eventService.UpdateEvent(id, new UpdateEventModel
@@ -76,7 +78,7 @@ public class EventController(IEventService _eventService) : ControllerBase
             EndAt = request.EndAt
         });
 
-        return updated is null ? NotFound() : Ok(ToResponse(updated));
+        return Ok(ToResponse(updated));
     }
 
 
@@ -85,10 +87,11 @@ public class EventController(IEventService _eventService) : ControllerBase
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Результат удаления мероприятия.</returns>
-    [HttpDelete("{id:Guid}")]
+    [HttpDelete("{id:guid}")]
     public IActionResult Delete(Guid id)
     {
-        return _eventService.RemoveEvent(id) ? NoContent() : NotFound();
+        _eventService.RemoveEvent(id);
+        return NoContent();
     }
 
     private static EventResponse ToResponse(Event ev) => new()
@@ -99,5 +102,9 @@ public class EventController(IEventService _eventService) : ControllerBase
         StartAt = ev.StartAt,
         EndAt = ev.EndAt
     };
+
+    private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
+        => new(result.Items.Select(ToResponse), result.CurrentPage, result.TotalPages, result.TotalItems);
+       
 }
 

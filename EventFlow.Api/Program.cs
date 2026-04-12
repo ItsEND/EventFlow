@@ -1,13 +1,13 @@
 using EventFlow.Api;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();   
 
 builder.Services.AddSingleton<IEventService, EventService>();
 
@@ -33,10 +33,10 @@ if (builder.Environment.IsDevelopment())
 }
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
     app.MapOpenApi();
     app.UseSwagger();
