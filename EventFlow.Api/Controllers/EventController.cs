@@ -104,7 +104,7 @@ public class EventController(IEventService _eventService) : ControllerBase
     };
 
     private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
-        => new(result.Items.Select(ToResponse), result.CurrentPage, result.TotalPages, result.TotalItems);
-       
+        => new(result.Items.Select(ToResponse), result.CurrentPage,result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
+
 }
 

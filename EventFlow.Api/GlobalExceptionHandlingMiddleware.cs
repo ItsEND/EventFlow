@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api;
 
@@ -40,11 +40,11 @@ public class GlobalExceptionHandlingMiddleware
         {
             _logger.LogWarning(
                 "Cannot write error response because the response already started TraceId = {TraceId}", httpContext.TraceIdentifier);
-            throw ex;
+            return;
         }
 
         var (statusCode, title, detail) = MapException(ex);
-        
+
         httpContext.Response.Clear();
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";
@@ -56,12 +56,9 @@ public class GlobalExceptionHandlingMiddleware
             Detail = detail,
             Type = GetTypeUri(statusCode),
             Instance = httpContext.Request.Path
-
-
         };
 
         await httpContext.Response.WriteAsJsonAsync(error);
-
     }
 
     private static (int statusCode, string title, string detail) MapException(Exception ex) =>
@@ -80,5 +77,4 @@ public class GlobalExceptionHandlingMiddleware
             StatusCodes.Status404NotFound => "https://httpstatuses.com/404",
             _ => "https://httpstatuses.com/500"
         };
-
 }

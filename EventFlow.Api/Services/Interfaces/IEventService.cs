@@ -15,21 +15,21 @@ public interface IEventService
     /// <param name="dateFrom"></param>
     /// <param name="dateTo"></param>
     /// <returns></returns>
-    public PaginatedResult<Event> GetEvents(int pageNumber, int pageSize, string? title = null, DateTime? dateFrom = null, DateTime? dateTo = null);
+    PaginatedResult<Event> GetEvents(int pageNumber, int pageSize, string? title = null, DateTime? dateFrom = null, DateTime? dateTo = null);
 
     /// <summary>
     /// Возвращает мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Найденное мероприятие или null, если мероприятие не существует.</returns>
-    public Event GetEvent(Guid id);
+    Event GetEvent(Guid id);
 
     /// <summary>
     /// Создает новое мероприятие.
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    public Event AddEvent(CreateEventModel newEvent);
+    Event AddEvent(CreateEventModel newEvent);
 
     /// <summary>
     /// Обновляет существующее мероприятие.
@@ -37,11 +37,11 @@ public interface IEventService
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="updatedEvent">Новые данные мероприятия.</param>
     /// <returns>Обновленное мероприятие или null, если мероприятие не найдено.</returns>
-    public Event UpdateEvent(Guid id, UpdateEventModel updatedEvent);
+    Event UpdateEvent(Guid id, UpdateEventModel updatedEvent);
 
     /// <summary>
     /// Удаляет мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
-    public void RemoveEvent(Guid id);
+    void RemoveEvent(Guid id);
 }

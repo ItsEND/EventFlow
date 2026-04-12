@@ -6,8 +6,24 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddProblemDetails();   
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Некорректный запрос",
+                Detail = "Одна или несколько ошибок валидации",
+                Type = "https://httpstatuses.com/400",
+                Instance = context.HttpContext.Request.Path
+            };
+            return new BadRequestObjectResult(problem);
+        };
+    });
+
+builder.Services.AddProblemDetails();
 
 builder.Services.AddSingleton<IEventService, EventService>();
 
