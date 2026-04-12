@@ -1,3 +1,4 @@
+using EventFlow.Api;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
 using System.Reflection;
@@ -35,6 +36,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
