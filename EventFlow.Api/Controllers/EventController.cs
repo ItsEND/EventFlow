@@ -21,7 +21,7 @@ public class EventController(IEventService _eventService) : ControllerBase
     [HttpGet]
     public ActionResult<PaginatedResult<EventResponse>> GetPaginatedEvents([FromQuery] GetEventsQuery query)
     {
-        var paginatedEvents = _eventService.GetEvents(query.Page, query.PageSize, query.Title, query.From, query.To);
+        var paginatedEvents = _eventService.GetEvents(query);
         var result = PaginatedEventToResponse(paginatedEvents);
 
         return Ok(result);

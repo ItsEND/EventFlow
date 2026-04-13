@@ -11,9 +11,9 @@ public record class GetEventsQuery
     [EndAfterStart(nameof(From), ErrorMessage = "Дата окончания должна быть позже даты начала")]
     public DateTime? To { get; init; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "Страница не может быть < 1")]
-    public int Page { get; init; } = 1;
-    [Range(1, 50, ErrorMessage = "Элементов на странице не может быть меньше 1 и больше 50")]
+    [Range(1, int.MaxValue, ErrorMessage = "Страница не может быть меньше 1")]
+    public int PageNumber { get; init; } = 1;
+    [Range(1, int.MaxValue, ErrorMessage = "Элементов на странице не может быть меньше 1")]
     public int PageSize { get; init; } = 10;
 }
 

@@ -7,15 +7,11 @@ namespace EventFlow.Api.Services.Interfaces;
 public interface IEventService
 {
     /// <summary>
-    /// 
+    /// Возвращает все отфильтрованные мероприятия.
     /// </summary>
-    /// <param name="pageNumber"></param>
-    /// <param name="pageSize"></param>
-    /// <param name="title"></param>
-    /// <param name="dateFrom"></param>
-    /// <param name="dateTo"></param>
-    /// <returns></returns>
-    PaginatedResult<Event> GetEvents(int pageNumber, int pageSize, string? title = null, DateTime? dateFrom = null, DateTime? dateTo = null);
+    /// <param name="pageData">Данные для фильтрации и страницы</param>
+    /// <returns>Результат отфильтрованного запроса с пагинацией.</returns>
+    PaginatedResult<Event> GetEvents(GetEventsQuery pageData);
 
     /// <summary>
     /// Возвращает мероприятие по идентификатору.

@@ -8,28 +8,41 @@ namespace EventFlow.Api.Services;
 /// <summary>
 /// Сервис для работы с мероприятиями, хранящимися в памяти приложения.
 /// </summary>
-public class EventService() : IEventService
+public class EventService : IEventService
 {
-    private List<Event> _events = [];
+    private readonly List<Event> _events;
 
-    public PaginatedResult<Event> GetEvents(int pageNumber, int pageSize, string? title = null, DateTime? dateFrom = null, DateTime? dateTo = null)
+    /// <summary>
+    /// Создает экземпляр сервиса мероприятий.
+    /// </summary>
+    /// <param name="initialEvents">Начальный список мероприятий (может быть null).</param>
+    public EventService(IEnumerable<Event>? initialEvents)
     {
-        ValidatePagination(pageNumber, pageSize);
+        _events = initialEvents?.ToList() ?? [];
+    }
 
-        int totalItems;
-        List<Event> items;
+    /// <summary>
+    /// Возвращает все отфильтрованные мероприятия.
+    /// </summary>
+    /// <param name="pageData">Данные для пагинации и фильтрации.</param>
+    /// <returns>Результат отфильтрованного запроса с пагинацией.</returns>
+    public PaginatedResult<Event> GetEvents(GetEventsQuery pageData)
+    {
+        ValidatePagination(pageData.PageNumber, pageData.PageSize);
 
-        BuildPaginateQuery(pageNumber, pageSize, title, dateFrom, dateTo, out totalItems, out items);
+        var query = ApplyFilters(pageData.Title, pageData.From, pageData.To);
+
+        var totalItems = query.Count();
+        var totalPages = (int)Math.Ceiling((double)totalItems / pageData.PageSize);
+
+        var items = ApplyPaging(query, pageData.PageNumber, pageData.PageSize);
 
         var totalItemsOnPage = items.Count;
-        var totalPages = totalItems == 0
-            ? 0
-            : (int)Math.Ceiling((double)totalItems / pageSize);
 
         return new PaginatedResult<Event>(
             items,
-            pageNumber,
-            pageSize,
+            pageData.PageNumber,
+            pageData.PageSize,
             totalPages,
             totalItems,
             totalItemsOnPage);
@@ -44,14 +57,14 @@ public class EventService() : IEventService
             throw new ValidationException("Размер страницы должен быть больше или равен 1.");
 
         if (pageSize > 50)
-            throw new ValidationException("Размер страницы не может быть больше 10.");
+            throw new ValidationException("Размер страницы не может быть больше 50.");
     }
 
     /// <summary>
     /// Возвращает мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
-    /// <returns>Найденное мероприятие или null, если мероприятие не существует.</returns>
+    /// <returns>Найденное мероприятие.</returns>
     public Event GetEvent(Guid id)
     {
         return _events.FirstOrDefault(e => e.Id == id)
@@ -83,7 +96,7 @@ public class EventService() : IEventService
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="updatedEvent">Новые данные мероприятия.</param>
-    /// <returns>Обновленное мероприятие или null, если мероприятие не найдено.</returns>
+    /// <returns>Обновленное мероприятие</returns>
     public Event UpdateEvent(Guid id, UpdateEventModel updatedEvent)
     {
         var ev = GetEvent(id);
@@ -101,15 +114,16 @@ public class EventService() : IEventService
     /// Удаляет мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
-    /// <returns>true, если мероприятие удалено; иначе false.</returns>
     public void RemoveEvent(Guid id)
     {
         var ev = GetEvent(id);
         _events.Remove(ev);
     }
 
-    private void BuildPaginateQuery(int pageNumber, int pageSize, string? title, DateTime? dateFrom, DateTime? dateTo,
-        out int totalItems, out List<Event> items)
+
+
+
+    private IEnumerable<Event> ApplyFilters(string? title, DateTime? dateFrom, DateTime? dateTo)
     {
         IEnumerable<Event> query = _events;
 
@@ -130,12 +144,14 @@ public class EventService() : IEventService
             query = query.Where(ev =>
             ev.EndAt <= dateTo);
         }
-
-        totalItems = query.Count();
-        items = query
-            .OrderByDescending(ev => ev.StartAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        return query;
+    }
+    private List<Event> ApplyPaging(IEnumerable<Event> query, int pageNumber, int pageSize)
+    {
+        return query
+           .OrderByDescending(ev => ev.StartAt)
+           .Skip((pageNumber - 1) * pageSize)
+           .Take(pageSize)
+           .ToList();
     }
 }
