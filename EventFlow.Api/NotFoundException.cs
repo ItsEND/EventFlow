@@ -4,12 +4,12 @@
 /// Исключение, выбрасываемое в случае, когда запрашиваемый ресурс не найден.
 /// </summary>
 public class NotFoundException : Exception
-{ 
+{
     /// <summary>
     /// Наименование ресурса, который не был найден.
     /// </summary>
     public string ResourceName { get; }
-    
+
     /// <summary>
     /// Ключ или идентификатор ресурса, который не был найден.
     /// </summary>

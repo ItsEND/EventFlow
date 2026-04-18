@@ -120,7 +120,7 @@ public class EventController(IEventService _eventService) : ControllerBase
     /// <param name="result">Постраничный результат доменной модели.</param>
     /// <returns>Постраничный результат DTO ответа.</returns>
     private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
-        => new(result.Items.Select(ToResponse), result.CurrentPage,result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
+        => new(result.Items.Select(ToResponse), result.CurrentPage, result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
 
 }
 

@@ -48,12 +48,12 @@ public class Event
         return new Event(Guid.NewGuid(), title, description, startAt, endAt);
     }
 
-    public void Update(string title,string? description, DateTime startAt, DateTime endAt)
+    public void Update(string title, string? description, DateTime startAt, DateTime endAt)
     {
         Validate(title, startAt, endAt);
 
         Title = title;
-        Description= description;
+        Description = description;
         StartAt = startAt;
         EndAt = endAt;
     }

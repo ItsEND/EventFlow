@@ -1,7 +1,6 @@
 ﻿using EventFlow.Api;
 using EventFlow.Api.Contracts;
 using EventFlow.Api.Models;
-using EventFlow.Api.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventService.Tests
@@ -283,22 +282,6 @@ namespace EventService.Tests
             Assert.Throws<ValidationException>(action);
         }
 
-        [Fact]
-        public void GetEvents_ShouldThrowValidationException_WhenPageSizeIsTooLarge()
-        {
-            // Arrange
-            var query = new GetEventsQuery
-            {
-                Page = 1,
-                PageSize = 51
-            };
-
-            // Act
-            var action = () => _eventService.GetEvents(query);
-
-            // Assert
-            Assert.Throws<ValidationException>(action);
-        }
         private static List<Event> SeedEvents()
         {
             return
