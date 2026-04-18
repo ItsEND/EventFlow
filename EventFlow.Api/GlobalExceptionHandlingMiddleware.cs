@@ -3,17 +3,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api;
 
+/// <summary>
+/// Middleware для глобальной обработки необработанных исключений
+/// и формирования единообразного JSON-ответа об ошибке.
+/// </summary>
 public class GlobalExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandlingMiddleware> _logger;
 
+    /// <summary>
+    /// Инициализирует новый экземпляр middleware обработки исключений.
+    /// </summary>
+    /// <param name="next">Следующий делегат в конвейере обработки запроса.</param>
+    /// <param name="logger">Логгер для записи информации об ошибках.</param>
     public GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Выполняет обработку HTTP-запроса и перехватывает необработанные исключения.
+    /// </summary>
+    /// <param name="httpContext">Контекст HTTP-запроса.</param>
+    /// <returns>Задача, представляющая асинхронную операцию.</returns>
     public async Task InvokeAsync(HttpContext httpContext)
     {
         try
@@ -26,6 +40,12 @@ public class GlobalExceptionHandlingMiddleware
         }
     }
 
+    /// <summary>
+    /// Формирует HTTP-ответ с данными об ошибке на основе типа исключения.
+    /// </summary>
+    /// <param name="httpContext">Контекст HTTP-запроса.</param>
+    /// <param name="ex">Обработанное исключение.</param>
+    /// <returns>Задача, представляющая асинхронную операцию записи ответа.</returns>
     private async Task HandleException(HttpContext httpContext, Exception ex)
     {
         _logger.LogError(
@@ -61,6 +81,11 @@ public class GlobalExceptionHandlingMiddleware
         await httpContext.Response.WriteAsJsonAsync(error);
     }
 
+    /// <summary>
+    /// Сопоставляет тип исключения с HTTP-статусом и описанием ошибки.
+    /// </summary>
+    /// <param name="ex">Исключение.</param>
+    /// <returns>Кортеж со статус-кодом, заголовком и деталями ошибки.</returns>
     private static (int statusCode, string title, string detail) MapException(Exception ex) =>
         ex switch
         {
@@ -70,6 +95,11 @@ public class GlobalExceptionHandlingMiddleware
 
         };
 
+    /// <summary>
+    /// Возвращает URI с описанием HTTP-статуса ошибки.
+    /// </summary>
+    /// <param name="statusCode">HTTP-статус код.</param>
+    /// <returns>URI, соответствующий коду ошибки.</returns>
     private static string GetTypeUri(int statusCode) =>
         statusCode switch
         {

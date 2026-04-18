@@ -7,57 +7,52 @@ namespace EventFlow.Api.Services;
 
 /// <summary>
 /// Сервис для работы с мероприятиями, хранящимися в памяти приложения.
+/// Выполняет операции создания, получения, обновления, удаления,
+/// фильтрации и пагинации мероприятий.
 /// </summary>
 public class EventService : IEventService
 {
     private readonly List<Event> _events;
 
     /// <summary>
-    /// Создает экземпляр сервиса мероприятий.
+    /// Инициализирует новый экземпляр сервиса мероприятий.
     /// </summary>
-    /// <param name="initialEvents">Начальный список мероприятий (может быть null).</param>
-    public EventService(IEnumerable<Event>? initialEvents)
+    /// <param name="initialEvents">
+    /// Начальный набор мероприятий. Если значение не передано,
+    /// создаётся пустая коллекция.
+    /// </param>
+    public EventService(IEnumerable<Event>? initialEvents = null)
     {
         _events = initialEvents?.ToList() ?? [];
     }
 
     /// <summary>
-    /// Возвращает все отфильтрованные мероприятия.
+    /// Возвращает список мероприятий с учетом фильтрации и пагинации.
     /// </summary>
-    /// <param name="pageData">Данные для пагинации и фильтрации.</param>
-    /// <returns>Результат отфильтрованного запроса с пагинацией.</returns>
+    /// <param name="pageData">Параметры фильтрации и пагинации.</param>
+    /// <returns>Постраничный результат с мероприятиями.</returns>
+    /// <exception cref="ValidationException">
+    /// Выбрасывается, если параметры пагинации некорректны.
+    /// </exception>
     public PaginatedResult<Event> GetEvents(GetEventsQuery pageData)
     {
-        ValidatePagination(pageData.PageNumber, pageData.PageSize);
+        ValidatePagination(pageData.Page, pageData.PageSize);
 
-        var query = ApplyFilters(pageData.Title, pageData.From, pageData.To);
+        var filteredEvents = ApplyFilters(pageData.Title, pageData.From, pageData.To);
 
-        var totalItems = query.Count();
-        var totalPages = (int)Math.Ceiling((double)totalItems / pageData.PageSize);
+        var totalItems = filteredEvents.Count();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageData.PageSize);
 
-        var items = ApplyPaging(query, pageData.PageNumber, pageData.PageSize);
-
+        var items = ApplyPaging(filteredEvents, pageData.Page, pageData.PageSize);
         var totalItemsOnPage = items.Count;
 
         return new PaginatedResult<Event>(
             items,
-            pageData.PageNumber,
+            pageData.Page,
             pageData.PageSize,
             totalPages,
             totalItems,
             totalItemsOnPage);
-    }
-
-    private static void ValidatePagination(int pageNumber, int pageSize)
-    {
-        if (pageNumber < 1)
-            throw new ValidationException("Номер страницы должен быть больше или равен 1.");
-
-        if (pageSize < 1)
-            throw new ValidationException("Размер страницы должен быть больше или равен 1.");
-
-        if (pageSize > 50)
-            throw new ValidationException("Размер страницы не может быть больше 50.");
     }
 
     /// <summary>
@@ -65,10 +60,13 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Найденное мероприятие.</returns>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие не найдено.
+    /// </exception>
     public Event GetEvent(Guid id)
     {
         return _events.FirstOrDefault(e => e.Id == id)
-            ?? throw new NotFoundException("Event", id);
+               ?? throw new NotFoundException("Event", id);
     }
 
     /// <summary>
@@ -78,17 +76,15 @@ public class EventService : IEventService
     /// <returns>Созданное мероприятие.</returns>
     public Event AddEvent(CreateEventModel newEvent)
     {
-        var ev = Event.Create(
+        var createdEvent = Event.Create(
+            newEvent.Title,
+            newEvent.Description,
+            newEvent.StartAt,
+            newEvent.EndAt);
 
-              newEvent.Title,
-              newEvent.Description,
-              newEvent.StartAt,
-              newEvent.EndAt
-          );
+        _events.Add(createdEvent);
 
-        _events.Add(ev);
-
-        return ev;
+        return createdEvent;
     }
 
     /// <summary>
@@ -96,62 +92,105 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="updatedEvent">Новые данные мероприятия.</param>
-    /// <returns>Обновленное мероприятие</returns>
+    /// <returns>Обновленное мероприятие.</returns>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие не найдено.
+    /// </exception>
     public Event UpdateEvent(Guid id, UpdateEventModel updatedEvent)
     {
-        var ev = GetEvent(id);
+        var existingEvent = GetEvent(id);
 
-        ev.Update(
-        updatedEvent.Title,
-        updatedEvent.Description,
-        updatedEvent.StartAt,
-        updatedEvent.EndAt
-        );
-        return ev;
+        existingEvent.Update(
+            updatedEvent.Title,
+            updatedEvent.Description,
+            updatedEvent.StartAt,
+            updatedEvent.EndAt);
+
+        return existingEvent;
     }
 
     /// <summary>
     /// Удаляет мероприятие по идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие не найдено.
+    /// </exception>
     public void RemoveEvent(Guid id)
     {
-        var ev = GetEvent(id);
-        _events.Remove(ev);
+        var existingEvent = GetEvent(id);
+        _events.Remove(existingEvent);
     }
 
+    /// <summary>
+    /// Проверяет корректность параметров пагинации.
+    /// </summary>
+    /// <param name="page">Номер страницы.</param>
+    /// <param name="pageSize">Размер страницы.</param>
+    /// <exception cref="ValidationException">
+    /// Выбрасывается, если номер страницы или размер страницы некорректны.
+    /// </exception>
+    private static void ValidatePagination(int page, int pageSize)
+    {
+        if (page < 1)
+        {
+            throw new ValidationException("Номер страницы должен быть больше или равен 1.");
+        }
 
+        if (pageSize < 1)
+        {
+            throw new ValidationException("Размер страницы должен быть больше или равен 1.");
+        }
 
+        if (pageSize > 50)
+        {
+            throw new ValidationException("Размер страницы не может быть больше 50.");
+        }
+    }
 
+    /// <summary>
+    /// Применяет фильтрацию к списку мероприятий по названию и диапазону дат.
+    /// </summary>
+    /// <param name="title">Фильтр по названию мероприятия.</param>
+    /// <param name="dateFrom">Нижняя граница даты начала.</param>
+    /// <param name="dateTo">Верхняя граница даты окончания.</param>
+    /// <returns>Отфильтрованная последовательность мероприятий.</returns>
     private IEnumerable<Event> ApplyFilters(string? title, DateTime? dateFrom, DateTime? dateTo)
     {
         IEnumerable<Event> query = _events;
 
         if (!string.IsNullOrWhiteSpace(title))
         {
-            query = query.Where(ev =>
-            ev.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(e =>
+                e.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
         }
 
         if (dateFrom.HasValue)
         {
-            query = query.Where(ev =>
-            ev.StartAt >= dateFrom);
+            query = query.Where(e => e.StartAt >= dateFrom.Value);
         }
 
         if (dateTo.HasValue)
         {
-            query = query.Where(ev =>
-            ev.EndAt <= dateTo);
+            query = query.Where(e => e.EndAt <= dateTo.Value);
         }
+
         return query;
     }
-    private List<Event> ApplyPaging(IEnumerable<Event> query, int pageNumber, int pageSize)
+
+    /// <summary>
+    /// Применяет пагинацию к последовательности мероприятий.
+    /// </summary>
+    /// <param name="query">Исходная последовательность мероприятий.</param>
+    /// <param name="page">Номер страницы.</param>
+    /// <param name="pageSize">Размер страницы.</param>
+    /// <returns>Список мероприятий для указанной страницы.</returns>
+    private static List<Event> ApplyPaging(IEnumerable<Event> query, int page, int pageSize)
     {
         return query
-           .OrderByDescending(ev => ev.StartAt)
-           .Skip((pageNumber - 1) * pageSize)
-           .Take(pageSize)
-           .ToList();
+            .OrderByDescending(e => e.StartAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 }

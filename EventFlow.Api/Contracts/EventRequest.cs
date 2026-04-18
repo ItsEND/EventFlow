@@ -1,35 +1,35 @@
-﻿using EventFlow.Api.Models.Validator;
-using System.ComponentModel.DataAnnotations;
+﻿    using EventFlow.Api.Models.Validator;
+    using System.ComponentModel.DataAnnotations;
 
-namespace EventFlow.Api.Contracts;
-
-/// <summary>
-/// Запрос на создание мероприятия.
-/// </summary>
-public record class EventRequest
-{
-    /// <summary>
-    /// Название мероприятия.
-    /// </summary>
-    [Required(AllowEmptyStrings = false, ErrorMessage = "Название обязательно для заполнения")]
-    public required string Title { get; init; }
+    namespace EventFlow.Api.Contracts;
 
     /// <summary>
-    /// Описание мероприятия.
+    /// Запрос на создание мероприятия.
     /// </summary>
-    [StringLength(400, ErrorMessage = "Максимальная длина описания не может превышать 400 символов")]
-    public string? Description { get; init; }
+    public record class EventRequest
+    {
+        /// <summary>
+        /// Название мероприятия.
+        /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Название обязательно для заполнения")]
+        public required string Title { get; init; }
 
-    /// <summary>
-    /// Дата и время начала мероприятия.
-    /// </summary>
-    [Required(ErrorMessage = "Дата начала обязательна")]
-    public required DateTime StartAt { get; init; }
+        /// <summary>
+        /// Описание мероприятия.
+        /// </summary>
+        [StringLength(400, ErrorMessage = "Максимальная длина описания не может превышать 400 символов")]
+        public string? Description { get; init; }
 
-    /// <summary>
-    /// Дата и время окончания мероприятия.
-    /// </summary>
-    [Required(ErrorMessage = "Дата окончания обязательна")]
-    [EndAfterStart(nameof(StartAt), ErrorMessage = "Дата окончания должна быть позже даты начала")]
-    public required DateTime EndAt { get; init; }
-}
+        /// <summary>
+        /// Дата и время начала мероприятия.
+        /// </summary>
+        [Required(ErrorMessage = "Дата начала обязательна")]
+        public required DateTime StartAt { get; init; }
+
+        /// <summary>
+        /// Дата и время окончания мероприятия.
+        /// </summary>
+        [Required(ErrorMessage = "Дата окончания обязательна")]
+        [EndAfterStart(nameof(StartAt), ErrorMessage = "Дата окончания должна быть позже даты начала")]
+        public required DateTime EndAt { get; init; }
+    }

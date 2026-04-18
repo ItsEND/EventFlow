@@ -1,23 +1,30 @@
 ﻿using EventFlow.Api.Contracts;
 using EventFlow.Api.Models;
+
 namespace EventFlow.Api.Services.Interfaces;
+
 /// <summary>
-/// Предоставляет методы для управления мероприятиями.
+/// Определяет контракт сервиса для управления мероприятиями:
+/// получения, создания, обновления, удаления,
+/// а также фильтрации и пагинации списка мероприятий.
 /// </summary>
 public interface IEventService
 {
     /// <summary>
-    /// Возвращает все отфильтрованные мероприятия.
+    /// Возвращает список мероприятий с учетом параметров фильтрации и пагинации.
     /// </summary>
-    /// <param name="pageData">Данные для фильтрации и страницы</param>
-    /// <returns>Результат отфильтрованного запроса с пагинацией.</returns>
+    /// <param name="pageData">Параметры фильтрации и пагинации.</param>
+    /// <returns>Постраничный результат с мероприятиями.</returns>
     PaginatedResult<Event> GetEvents(GetEventsQuery pageData);
 
     /// <summary>
-    /// Возвращает мероприятие по идентификатору.
+    /// Возвращает мероприятие по его идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
-    /// <returns>Найденное мероприятие или null, если мероприятие не существует.</returns>
+    /// <returns>Найденное мероприятие.</returns>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
+    /// </exception>
     Event GetEvent(Guid id);
 
     /// <summary>
@@ -32,12 +39,18 @@ public interface IEventService
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="updatedEvent">Новые данные мероприятия.</param>
-    /// <returns>Обновленное мероприятие или null, если мероприятие не найдено.</returns>
+    /// <returns>Обновленное мероприятие.</returns>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
+    /// </exception>
     Event UpdateEvent(Guid id, UpdateEventModel updatedEvent);
 
     /// <summary>
-    /// Удаляет мероприятие по идентификатору.
+    /// Удаляет мероприятие по его идентификатору.
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
+    /// <exception cref="NotFoundException">
+    /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
+    /// </exception>
     void RemoveEvent(Guid id);
 }
