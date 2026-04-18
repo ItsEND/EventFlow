@@ -50,14 +50,19 @@ namespace EventService.Tests
         [Fact]
         public void GetEvents_ReturnsAllEvents()
         {
-            //Arrange   
+            // Arrange
             var expectedCount = _seedEvents.Count;
 
-            //Act   
+            var query = new GetEventsQuery
+            {
+                Page = 1,
+                PageSize = 50
+            };
 
-            var result = _eventService.GetEvents(new GetEventsQuery());
+            // Act
+            var result = _eventService.GetEvents(query);
 
-            //Assert
+            // Assert
             Assert.Equal(expectedCount, result.TotalItems);
             Assert.Equal(expectedCount, result.Items.Count());
         }
@@ -164,7 +169,7 @@ namespace EventService.Tests
         [Fact]
         public void GetEvents_ShouldReturnRequestedPage()
         {
-            //Arrange
+            // Arrange
             var query = new GetEventsQuery
             {
                 Page = 2,
@@ -177,15 +182,16 @@ namespace EventService.Tests
                 .Take(5)
                 .ToList();
 
-            //Act
+            // Act
             var result = _eventService.GetEvents(query);
 
-            //Assert
+            // Assert
             Assert.Equal(2, result.CurrentPage);
             Assert.Equal(5, result.PageSize);
             Assert.Equal(12, result.TotalItems);
             Assert.Equal(3, result.TotalPages);
             Assert.Equal(5, result.TotalItemsOnPage);
+            Assert.Equal(expectedPageItems.Select(x => x.Id), result.Items.Select(x => x.Id));
         }
 
         [Fact]
