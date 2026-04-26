@@ -1,12 +1,29 @@
+using EventFlow.Api;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Некорректный запрос",
+                Detail = "Одна или несколько ошибок валидации",
+                Type = "https://httpstatuses.com/400",
+                Instance = context.HttpContext.Request.Path
+            };
+            return new BadRequestObjectResult(problem);
+        };
+    });
 
-builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddSingleton<IEventService, EventService>();
 
@@ -32,9 +49,11 @@ if (builder.Environment.IsDevelopment())
 }
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
