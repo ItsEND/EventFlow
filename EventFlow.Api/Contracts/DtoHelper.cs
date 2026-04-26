@@ -28,9 +28,7 @@ namespace EventFlow.Api.Contracts
         {
             Id = booking.Id,
             EventId = booking.EventId,
-            Status = booking.Status,
-            CreatedAt = booking.CreatedAt,
-            ProcessedAt = booking.ProcessedAt,
+            Status = booking.Status.ToString(),
         };
     }
 }

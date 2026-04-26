@@ -8,7 +8,7 @@ public class Booking
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public DateTime? ProcessedAt { get; private set; }
 
-    public Booking(Guid id, Guid eventId)
+    private Booking(Guid id, Guid eventId)
     {
         Id = id;
         EventId = eventId;
@@ -21,8 +21,12 @@ public class Booking
 
     public void Update(BookingStatus status)
     {
+        if (status == BookingStatus.Pending)
+        {
+            throw new InvalidOperationException("Процессу не может быть повторно присвоен статус Pending");
+        }
+
         Status = status;
         ProcessedAt = DateTime.UtcNow;
     }
-
 }

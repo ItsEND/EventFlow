@@ -29,6 +29,8 @@ builder.Services.AddSingleton<IEventService, EventService>();
 builder.Services.AddSingleton<IBookingService, BookingService>();
 builder.Services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
+builder.Services.AddHostedService<BookingBackgroundCreateService>();
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddOpenApi();

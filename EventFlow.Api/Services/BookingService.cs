@@ -7,30 +7,36 @@ namespace EventFlow.Api.Services;
 public class BookingService : IBookingService
 {
     private readonly IEventService _eventService;
-
+    private readonly IBookingTaskQueue _taskQueue;
     private readonly ConcurrentDictionary<Guid, Booking> _bookings;
 
-    public BookingService(IEventService eventService, IEnumerable<Booking>? bookings = null)
+    public BookingService(IEventService eventService, IBookingTaskQueue taskQueue, IEnumerable<Booking>? bookings = null)
     {
         _eventService = eventService;
-        var initDict = bookings?.ToDictionary(b => b.Id, b => b) ?? new Dictionary<Guid, Booking>();
 
+        var initDict = bookings?.ToDictionary(b => b.Id, b => b) ?? [];
+
+        _taskQueue = taskQueue;
         _bookings = new ConcurrentDictionary<Guid, Booking>(initDict);
     }
 
-    public Task<Booking> CreateBookingAsync(Guid eventId)
+    public async Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct)
     {
-        var eventEntity = _eventService.GetEvent(eventId);
+        ct.ThrowIfCancellationRequested();
+       _eventService.GetEvent(eventId);
+
 
         var booking = Booking.Create(eventId);
-
         _bookings.TryAdd(booking.Id, booking);
 
-        return Task.FromResult(booking);
+        await _taskQueue.EnqueueAsync(booking.Id, ct);
+        return booking;
     }
 
-    public Task<Booking> GetBookingByIdAsync(Guid bookingId)
+    public Task<Booking> GetBookingByIdAsync(Guid bookingId, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+
         var res = _bookings.TryGetValue(bookingId, out var booking);
 
         if (!res)
@@ -38,6 +44,17 @@ public class BookingService : IBookingService
             throw new NotFoundException("Booking", bookingId);
         }
 
-        return Task.FromResult(booking!);
+        return Task.FromResult(booking);
+    }
+
+    public async Task<Booking> ProcessBookingAsync(Guid bookingId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var booking = await GetBookingByIdAsync(bookingId, ct);
+
+        booking.Update(BookingStatus.Confirmed);
+
+        return booking;
     }
 }

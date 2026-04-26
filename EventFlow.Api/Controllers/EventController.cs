@@ -14,7 +14,7 @@ namespace EventFlow.Api.Controllers;
 /// <param name="_eventService">Сервис для работы с мероприятиями.</param>
 [ApiController]
 [Route("events")]
-public class EventController(IEventService _eventService, IBookingService _bookingService, IBookingTaskQueue taskQueue) : ControllerBase
+public class EventController(IEventService _eventService, IBookingService _bookingService) : ControllerBase
 {
     /// <summary>
     /// Возвращает список мероприятий с учетом фильтрации и пагинации.
@@ -101,10 +101,10 @@ public class EventController(IEventService _eventService, IBookingService _booki
     }
 
     [HttpPost("{id:guid}/book")]
-    public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id)
+    public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {
-        var booking = await _bookingService.CreateBookingAsync(id);
 
+        var booking = await _bookingService.CreateBookingAsync(id, ct);
         var response = DtoHelper.ToBookingResponse(booking);
 
         return Accepted($"/bookings/{booking.Id}", response);
@@ -117,8 +117,6 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="result">Постраничный результат доменной модели.</param>
     /// <returns>Постраничный результат DTO ответа.</returns>
     private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
-        => new(result.Items.Select(DtoHelper.ToEventResponse), 
+        => new(result.Items.Select(DtoHelper.ToEventResponse),
             result.CurrentPage, result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
-
 }
-

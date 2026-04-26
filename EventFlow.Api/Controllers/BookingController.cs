@@ -7,12 +7,13 @@ namespace EventFlow.Api.Controllers
 {
     [ApiController]
     [Route("bookings")]
-    public class BookingController(IBookingService _bookingService, IBookingTaskQueue _taskQueue, ILogger<BookingController> _logger) : ControllerBase
+    public class BookingController(IBookingService _bookingService) : ControllerBase
     {
+
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<BookingResponse>> GetBooking(Guid id)
+        public async Task<ActionResult<BookingResponse>> GetBooking(Guid id, CancellationToken ct)
         {
-            var booking = await _bookingService.GetBookingByIdAsync(id);
+            var booking = await _bookingService.GetBookingByIdAsync(id, ct);
             return Ok(DtoHelper.ToBookingResponse(booking));
         }
     }
