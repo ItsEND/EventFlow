@@ -1,4 +1,5 @@
 ﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Contracts.Events;
 using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;

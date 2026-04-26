@@ -1,4 +1,4 @@
-﻿namespace EventFlow.Api.Contracts;
+﻿namespace EventFlow.Api.Contracts.Events;
 
 /// <summary>
 /// Ответ с данными мероприятия.

@@ -1,7 +1,7 @@
 ﻿using EventFlow.Api.Models.Validator;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventFlow.Api.Contracts;
+namespace EventFlow.Api.Contracts.Events;
 
 /// <summary>
 /// Запрос на обновление мероприятия.
