@@ -1,6 +1,4 @@
-﻿using EventFlow.Api.Models;
-
-namespace EventFlow.Api.Services.Interfaces;
+﻿namespace EventFlow.Api.Services.Interfaces;
 
 public interface IBookingTaskQueue
 {

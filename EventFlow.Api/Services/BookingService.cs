@@ -23,7 +23,7 @@ public class BookingService : IBookingService
     public async Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-       _eventService.GetEvent(eventId);
+        _eventService.GetEvent(eventId);
 
 
         var booking = Booking.Create(eventId);
@@ -39,12 +39,7 @@ public class BookingService : IBookingService
 
         var res = _bookings.TryGetValue(bookingId, out var booking);
 
-        if (!res)
-        {
-            throw new NotFoundException("Booking", bookingId);
-        }
-
-        return Task.FromResult(booking);
+        return !res ? throw new NotFoundException("Booking", bookingId) : Task.FromResult(booking);
     }
 
     public async Task<Booking> ProcessBookingAsync(Guid bookingId, CancellationToken ct)
@@ -53,7 +48,7 @@ public class BookingService : IBookingService
 
         var booking = await GetBookingByIdAsync(bookingId, ct);
 
-        booking.Update(BookingStatus.Confirmed);
+        booking.Confirm();
 
         return booking;
     }

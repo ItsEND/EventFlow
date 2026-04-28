@@ -1,6 +1,4 @@
 ﻿using EventFlow.Api.Services.Interfaces;
-using EventFlow.Api.Models;
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace EventFlow.Api.Services;

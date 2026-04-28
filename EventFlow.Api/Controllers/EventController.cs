@@ -100,6 +100,13 @@ public class EventController(IEventService _eventService, IBookingService _booki
         return NoContent();
     }
 
+    /// <summary>
+    /// Создаёт бронь для мероприятия.
+    /// Возвращает 202 Accepted, так как обработка брони выполняется фоновым сервисом.
+    /// </summary>
+    /// <param name="id">Идентификатор мероприятия.</param>
+    /// <param name="ct">Токен отмены запроса.</param>
+    /// <returns>Созданная бронь в статусе Pending.</returns>
     [HttpPost("{id:guid}/book")]
     public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {

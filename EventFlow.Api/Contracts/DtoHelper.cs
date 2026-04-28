@@ -22,13 +22,15 @@ namespace EventFlow.Api.Contracts
         /// <summary>
         /// Преобразует внутреннюю модель бронирования в DTO ответа.
         /// </summary>
-        /// <param name="booking">Мероприятие доменной модели.</param>
-        /// <returns>Объект ответа с данными бронирования</returns>
+        /// <param name="booking">Бронь доменной модели.</param>
+        /// <returns>Объект ответа с данными брони.</returns>
         public static BookingResponse ToBookingResponse(Models.Booking booking) => new()
         {
             Id = booking.Id,
             EventId = booking.EventId,
             Status = booking.Status.ToString(),
+            CreatedAt = booking.CreatedAt,
+            ProcessedAt = booking.ProcessedAt
         };
     }
 }

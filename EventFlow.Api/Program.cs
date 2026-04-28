@@ -29,7 +29,7 @@ builder.Services.AddSingleton<IEventService, EventService>();
 builder.Services.AddSingleton<IBookingService, BookingService>();
 builder.Services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
-builder.Services.AddHostedService<BookingBackgroundCreateService>();
+builder.Services.AddHostedService<BookingProcessingBackgroundService>();
 
 if (builder.Environment.IsDevelopment())
 {
