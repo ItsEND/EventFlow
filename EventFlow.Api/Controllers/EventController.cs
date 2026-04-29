@@ -1,4 +1,6 @@
 ﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Contracts.Booking;
+using EventFlow.Api.Contracts.Events;
 using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +14,7 @@ namespace EventFlow.Api.Controllers;
 /// <param name="_eventService">Сервис для работы с мероприятиями.</param>
 [ApiController]
 [Route("events")]
-public class EventController(IEventService _eventService) : ControllerBase
+public class EventController(IEventService _eventService, IBookingService _bookingService) : ControllerBase
 {
     /// <summary>
     /// Возвращает список мероприятий с учетом фильтрации и пагинации.
@@ -42,7 +44,7 @@ public class EventController(IEventService _eventService) : ControllerBase
     public ActionResult<EventResponse> GetEventById(Guid id)
     {
         var ev = _eventService.GetEvent(id);
-        return Ok(ToResponse(ev));
+        return Ok(DtoHelper.ToEventResponse(ev));
     }
 
     /// <summary>
@@ -61,7 +63,7 @@ public class EventController(IEventService _eventService) : ControllerBase
             EndAt = request.EndAt
         });
 
-        var response = ToResponse(created);
+        var response = DtoHelper.ToEventResponse(created);
 
         return CreatedAtAction(nameof(GetEventById), new { id = response.Id }, response);
     }
@@ -83,9 +85,8 @@ public class EventController(IEventService _eventService) : ControllerBase
             EndAt = request.EndAt
         });
 
-        return Ok(ToResponse(updated));
+        return Ok(DtoHelper.ToEventResponse(updated));
     }
-
 
     /// <summary>
     /// Удаляет мероприятие по его идентификатору.
@@ -100,18 +101,21 @@ public class EventController(IEventService _eventService) : ControllerBase
     }
 
     /// <summary>
-    /// Преобразует внутреннюю модель мероприятия в DTO ответа.
+    /// Создаёт бронь для мероприятия.
+    /// Возвращает 202 Accepted, так как обработка брони выполняется фоновым сервисом.
     /// </summary>
-    /// <param name="ev">Мероприятие доменной модели.</param>
-    /// <returns>Объект ответа с данными мероприятия.</returns>
-    private static EventResponse ToResponse(Event ev) => new()
+    /// <param name="id">Идентификатор мероприятия.</param>
+    /// <param name="ct">Токен отмены запроса.</param>
+    /// <returns>Созданная бронь в статусе Pending.</returns>
+    [HttpPost("{id:guid}/book")]
+    public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {
-        Id = ev.Id,
-        Title = ev.Title,
-        Description = ev.Description,
-        StartAt = ev.StartAt,
-        EndAt = ev.EndAt
-    };
+
+        var booking = await _bookingService.CreateBookingAsync(id, ct);
+        var response = DtoHelper.ToBookingResponse(booking);
+
+        return Accepted($"/bookings/{booking.Id}", response);
+    }
 
     /// <summary>
     /// Преобразует постраничный результат мероприятий доменной модели
@@ -120,7 +124,6 @@ public class EventController(IEventService _eventService) : ControllerBase
     /// <param name="result">Постраничный результат доменной модели.</param>
     /// <returns>Постраничный результат DTO ответа.</returns>
     private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
-        => new(result.Items.Select(ToResponse), result.CurrentPage, result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
-
+        => new(result.Items.Select(DtoHelper.ToEventResponse),
+            result.CurrentPage, result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
 }
-

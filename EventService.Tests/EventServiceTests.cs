@@ -1,5 +1,5 @@
 ﻿using EventFlow.Api;
-using EventFlow.Api.Contracts;
+using EventFlow.Api.Contracts.Events;
 using EventFlow.Api.Models;
 using System.ComponentModel.DataAnnotations;
 
@@ -14,7 +14,6 @@ namespace EventService.Tests
         {
             _seedEvents = SeedEvents();
             _eventService = new EventFlow.Api.Services.EventService(_seedEvents);
-
         }
 
         [Fact]
@@ -220,13 +219,14 @@ namespace EventService.Tests
         {
             //Arrange
             var nonExistentId = Guid.NewGuid();
-            
+
             //Act
             var action = () => _eventService.GetEvent(nonExistentId);
-            
+
             //Assert
             Assert.Throws<NotFoundException>(action);
         }
+
         [Fact]
         public void UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
         {
