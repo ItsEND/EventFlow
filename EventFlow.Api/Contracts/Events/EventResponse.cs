@@ -21,6 +21,15 @@ public record class EventResponse
     public string? Description { get; init; }
 
     /// <summary>
+    /// Общее количество мест на событии
+    /// </summary>
+    public required int TotalSeats { get; init; }
+
+    /// <summary>
+    /// Текущее количество свободных мест
+    /// </summary>
+    public required int AvailableSeats { get; init; }
+    /// <summary>
     /// Дата и время начала мероприятия.
     /// </summary>
     public required DateTime StartAt { get; init; }

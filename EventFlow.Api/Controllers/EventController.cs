@@ -27,10 +27,10 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// Постраничный список мероприятий в виде <see cref="PaginatedResult{T}"/>.
     /// </returns>
     [HttpGet]
-    public ActionResult<PaginatedResult<EventResponse>> GetEvents([FromQuery] GetEventsQuery query)
+    public async Task<ActionResult<PaginatedResult<EventResponse>>> GetEvents([FromQuery] GetEventsQuery query)
     {
         var paginatedEvents = _eventService.GetEvents(query);
-        var result = PaginatedEventToResponse(paginatedEvents);
+        var result = PaginatedEventToResponse(await paginatedEvents);
 
         return Ok(result);
     }
@@ -41,10 +41,10 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
     [HttpGet("{id:guid}")]
-    public ActionResult<EventResponse> GetEventById(Guid id)
+    public async Task<ActionResult<EventResponse>> GetEventById(Guid id)
     {
         var ev = _eventService.GetEvent(id);
-        return Ok(DtoHelper.ToEventResponse(ev));
+        return Ok(DtoHelper.ToEventResponse(await ev));
     }
 
     /// <summary>
@@ -53,17 +53,18 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="request">Данные для создания мероприятия.</param>
     /// <returns>Мероприятие.</returns>
     [HttpPost]
-    public ActionResult<EventResponse> CreateEvent([FromBody] EventRequest request)
+    public async Task<ActionResult<EventResponse>> CreateEvent([FromBody] EventRequest request)
     {
-        var created = _eventService.AddEvent(new CreateEventModel
+        var created = _eventService.CreateEventAsync(new CreateEventModel
         {
             Title = request.Title,
             Description = request.Description,
+            TotalSeats = request.TotalSeats!.Value,
             StartAt = request.StartAt,
             EndAt = request.EndAt
         });
 
-        var response = DtoHelper.ToEventResponse(created);
+        var response = DtoHelper.ToEventResponse(await created);
 
         return CreatedAtAction(nameof(GetEventById), new { id = response.Id }, response);
     }
@@ -75,7 +76,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="request">Новые данные мероприятия.</param>
     /// <returns>Обновленное мероприятие.</returns>
     [HttpPut("{id:guid}")]
-    public IActionResult UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
+    public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
         var updated = _eventService.UpdateEvent(id, new UpdateEventModel
         {
@@ -85,7 +86,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
             EndAt = request.EndAt
         });
 
-        return Ok(DtoHelper.ToEventResponse(updated));
+        return  Ok(DtoHelper.ToEventResponse(await updated));
     }
 
     /// <summary>
@@ -94,9 +95,9 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Пустой ответ со статусом 204 No Content.</returns>
     [HttpDelete("{id:guid}")]
-    public IActionResult Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        _eventService.RemoveEvent(id);
+        await _eventService.RemoveEvent(id);
         return NoContent();
     }
 

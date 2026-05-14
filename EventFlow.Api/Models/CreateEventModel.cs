@@ -16,6 +16,11 @@ public record class CreateEventModel
     public string? Description { get; init; }
 
     /// <summary>
+    /// Общее количество мест на событии
+    /// </summary>
+    public int TotalSeats { get; init; }
+
+    /// <summary>
     /// Дата и время начала мероприятия.
     /// </summary>
     public required DateTime StartAt { get; init; }

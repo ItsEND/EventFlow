@@ -31,7 +31,7 @@ namespace EventService.Tests
             var beforeCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
 
             // Act
-            var created = _eventService.AddEvent(newEvent);
+            var created = _eventService.CreateEventAsync(newEvent);
 
             var after = _eventService.GetEvent(created.Id);
             var afterCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
@@ -261,7 +261,7 @@ namespace EventService.Tests
             };
 
             // Act
-            var action = () => _eventService.AddEvent(invalidEvent);
+            var action = () => _eventService.CreateEventAsync(invalidEvent);
 
             // Assert
             Assert.Throws<ValidationException>(action);
