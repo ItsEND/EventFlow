@@ -1,6 +1,7 @@
 ﻿using EventFlow.Api;
 using EventFlow.Api.Contracts.Events;
 using EventFlow.Api.Models;
+using EventFlow.Api.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventService.Tests
@@ -13,28 +14,32 @@ namespace EventService.Tests
         public EventServiceTests()
         {
             _seedEvents = SeedEvents();
-            _eventService = new EventFlow.Api.Services.EventService(_seedEvents);
+
+            var eventStore = new InMemoryEventStore(_seedEvents);
+
+            _eventService = new EventFlow.Api.Services.EventService(eventStore);
         }
 
         [Fact]
-        public void AddEvent_ShouldCreateEvent()
+        public async Task AddEvent_ShouldCreateEvent()
         {
             // Arrange
             var newEvent = new CreateEventModel
             {
                 Title = "Новый Митап",
                 Description = "Описание нового митапа",
+                TotalSeats = 10,
                 StartAt = new DateTime(2026, 6, 1, 18, 0, 0),
                 EndAt = new DateTime(2026, 6, 1, 20, 0, 0)
             };
 
-            var beforeCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
+            var beforeCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
 
             // Act
-            var created = _eventService.CreateEventAsync(newEvent);
+            var created = await _eventService.CreateEventAsync(newEvent);
 
-            var after = _eventService.GetEvent(created.Id);
-            var afterCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
+            var after = await _eventService.GetEvent(created.Id);
+            var afterCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
 
             // Assert
             Assert.NotNull(created);
@@ -42,12 +47,14 @@ namespace EventService.Tests
 
             Assert.Equal(newEvent.Title, after.Title);
             Assert.Equal(newEvent.Description, after.Description);
+            Assert.Equal(newEvent.TotalSeats, after.TotalSeats);
+            Assert.Equal(newEvent.TotalSeats, after.AvailableSeats);
             Assert.Equal(newEvent.StartAt, after.StartAt);
             Assert.Equal(newEvent.EndAt, after.EndAt);
         }
 
         [Fact]
-        public void GetEvents_ReturnsAllEvents()
+        public async Task GetEvents_ReturnsAllEvents()
         {
             // Arrange
             var expectedCount = _seedEvents.Count;
@@ -59,7 +66,7 @@ namespace EventService.Tests
             };
 
             // Act
-            var result = _eventService.GetEvents(query);
+            var result = await _eventService.GetEvents(query);
 
             // Assert
             Assert.Equal(expectedCount, result.TotalItems);
@@ -67,13 +74,13 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void GetEvent_ShouldReturnWhenIdExists()
+        public async Task GetEvent_ShouldReturnWhenIdExists()
         {
             //Arrange
             var existingEvent = _seedEvents.First();
 
             //Act
-            var result = _eventService.GetEvent(existingEvent.Id);
+            var result = await _eventService.GetEvent(existingEvent.Id);
 
             //Assert
             Assert.NotNull(result);
@@ -85,7 +92,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void UpdateEvent_ShouldModifyExistingEvent()
+        public async Task UpdateEvent_ShouldModifyExistingEvent()
         {
             //Arrange
             var existingEvent = _seedEvents.First();
@@ -98,8 +105,8 @@ namespace EventService.Tests
             };
 
             //Act
-            var updated = _eventService.UpdateEvent(existingEvent.Id, updateModel);
-            var afterUpdate = _eventService.GetEvent(existingEvent.Id);
+            var updated = await _eventService.UpdateEvent(existingEvent.Id, updateModel);
+            var afterUpdate = await _eventService.GetEvent(existingEvent.Id);
 
             //Assert
             Assert.NotNull(updated);
@@ -111,23 +118,23 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void RemoveEvent_ShouldDeleteExistingEvent()
+        public async Task RemoveEvent_ShouldDeleteExistingEvent()
         {
             //Arrange
             var existingEvent = _seedEvents.First();
-            var beforeCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
+            var beforeCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
 
             //Act
-            _eventService.RemoveEvent(existingEvent.Id);
-            var afterCount = _eventService.GetEvents(new GetEventsQuery()).TotalItems;
+            await _eventService.RemoveEvent(existingEvent.Id);
+            var afterCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
 
             //Assert
             Assert.Equal(beforeCount - 1, afterCount);
-            Assert.Throws<NotFoundException>(() => _eventService.GetEvent(existingEvent.Id));
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _eventService.GetEvent(existingEvent.Id));
         }
 
         [Fact]
-        public void FilterByTitle_ReturnsMatchingEvents()
+        public async Task FilterByTitle_ReturnsMatchingEvents()
         {
             //Arrange
             var searchSubstring = ".NET";
@@ -136,7 +143,7 @@ namespace EventService.Tests
             var pageData = new GetEventsQuery { Title = searchSubstring };
 
             //Act
-            var result = _eventService.GetEvents(pageData).Items;
+            var result = (await _eventService.GetEvents(pageData)).Items;
 
             //Assert
             Assert.All(result, ev => expectedResult.Contains(ev.Title));
@@ -144,7 +151,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void GetEvents_ShouldFilterByDateRange()
+        public async Task GetEvents_ShouldFilterByDateRange()
         {
             //Arrange
 
@@ -155,7 +162,7 @@ namespace EventService.Tests
             };
 
             //Act
-            var result = _eventService.GetEvents(query);
+            var result = await _eventService.GetEvents(query);
             var titles = result.Items.Select(e => e.Title).ToList();
 
             //Assert
@@ -166,7 +173,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void GetEvents_ShouldReturnRequestedPage()
+        public async Task GetEvents_ShouldReturnRequestedPage()
         {
             // Arrange
             var query = new GetEventsQuery
@@ -182,7 +189,7 @@ namespace EventService.Tests
                 .ToList();
 
             // Act
-            var result = _eventService.GetEvents(query);
+            var result = await _eventService.GetEvents(query);
 
             // Assert
             Assert.Equal(2, result.CurrentPage);
@@ -194,7 +201,7 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void GetEvents_ShouldApplyCombinedFilters()
+        public async Task GetEvents_ShouldApplyCombinedFilters()
         {
             //Arrange
             var query = new GetEventsQuery
@@ -205,7 +212,7 @@ namespace EventService.Tests
             };
 
             //Act
-            var result = _eventService.GetEvents(query);
+            var result = await _eventService.GetEvents(query);
             var titles = result.Items.Select(e => e.Title).ToList();
 
             //Assert
@@ -215,20 +222,20 @@ namespace EventService.Tests
         }
 
         [Fact]
-        public void GetEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+        public async Task GetEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
         {
             //Arrange
             var nonExistentId = Guid.NewGuid();
 
             //Act
-            var action = () => _eventService.GetEvent(nonExistentId);
+            var action = async () => await _eventService.GetEvent(nonExistentId);
 
             //Assert
-            Assert.Throws<NotFoundException>(action);
+            await Assert.ThrowsAsync<NotFoundException>(action);
         }
 
         [Fact]
-        public void UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+        public async Task UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
         {
             // Arrange
             var id = Guid.NewGuid();
@@ -242,33 +249,48 @@ namespace EventService.Tests
             };
 
             // Act
-            var action = () => _eventService.UpdateEvent(id, updateModel);
+            var action = async () => await _eventService.UpdateEvent(id, updateModel);
 
             // Assert
-            Assert.Throws<NotFoundException>(action);
+            await Assert.ThrowsAsync<NotFoundException>(action);
         }
 
         [Fact]
-        public void AddEvent_ShouldThrowValidationException_WhenTitleIsInvalid()
+        public async Task AddEvent_ShouldThrowValidationException_WhenTitleIsInvalid()
         {
             // Arrange
             var invalidEvent = new CreateEventModel
             {
                 Title = "   ",
                 Description = "Описание",
+                TotalSeats = 10,
                 StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
                 EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
             };
 
             // Act
-            var action = () => _eventService.CreateEventAsync(invalidEvent);
+            var action = async () => await _eventService.CreateEventAsync(invalidEvent);
 
             // Assert
-            Assert.Throws<ValidationException>(action);
+            await Assert.ThrowsAsync<ValidationException>(action);
         }
-
         [Fact]
-        public void UpdateEvent_ShouldThrowValidationException_WhenEndAtEarlierThanStartAt()
+        public async Task AddEvent_ShouldThrowValidationException_WhenTotalSeatsIsNotPositive()
+        {
+            var invalidEvent = new CreateEventModel
+            {
+                Title = "Event",
+                Description = "Описание",
+                TotalSeats = 0,
+                StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
+                EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
+            };
+
+            await Assert.ThrowsAsync<ValidationException>(() =>
+                _eventService.CreateEventAsync(invalidEvent));
+        }
+        [Fact]
+        public async Task UpdateEvent_ShouldThrowValidationException_WhenEndAtEarlierThanStartAt()
         {
             // Arrange
             var existingEvent = _seedEvents.First();
@@ -282,10 +304,10 @@ namespace EventService.Tests
             };
 
             // Act
-            var action = () => _eventService.UpdateEvent(existingEvent.Id, invalidUpdate);
+            var action = async () => await _eventService.UpdateEvent(existingEvent.Id, invalidUpdate);
 
             // Assert
-            Assert.Throws<ValidationException>(action);
+            await Assert.ThrowsAsync<ValidationException>(action);
         }
 
         private static List<Event> SeedEvents()
@@ -295,77 +317,87 @@ namespace EventService.Tests
             Event.Create(
                 "Конференция .NET Backend",
                 "Практики построения Web API на ASP.NET Core",
+                10,
                 new DateTime(2026, 4, 15, 10, 0, 0),
                 new DateTime(2026, 4, 15, 18, 0, 0)),
 
             Event.Create(
                 "Митап C# Junior",
                 "Разбор базовых возможностей языка C#",
+                15,
                 new DateTime(2026, 4, 16, 18, 30, 0),
                 new DateTime(2026, 4, 16, 20, 30, 0)),
 
             Event.Create(
                 "Воркшоп по LINQ",
                 "Фильтрация, группировка и проекции",
+                10,
                 new DateTime(2026, 4, 18, 11, 0, 0),
                 new DateTime(2026, 4, 18, 14, 0, 0)),
 
             Event.Create(
                 "Архитектура REST API",
                 "Проектирование контроллеров, DTO и сервисов",
+                41,
                 new DateTime(2026, 4, 20, 9, 30, 0),
                 new DateTime(2026, 4, 20, 12, 30, 0)),
 
             Event.Create(
                 "Конференция по тестированию",
                 "Unit-тесты, интеграционные тесты и моки",
+                10,
                 new DateTime(2026, 4, 22, 10, 0, 0),
                 new DateTime(2026, 4, 22, 17, 0, 0)),
 
             Event.Create(
                 "SQL Meetup",
                 "Практика написания SQL-запросов",
+                5,
                 new DateTime(2026, 4, 25, 17, 0, 0),
                 new DateTime(2026, 4, 25, 19, 0, 0)),
 
             Event.Create(
                 "Docker для разработчиков",
                 "Контейнеризация приложений .NET",
+                4,
                 new DateTime(2026, 5, 2, 12, 0, 0),
                 new DateTime(2026, 5, 2, 15, 0, 0)),
 
             Event.Create(
                 "Митап по ASP.NET Core",
                 "Middleware, маршрутизация и обработка ошибок",
+                999,
                 new DateTime(2026, 5, 5, 18, 0, 0),
                 new DateTime(2026, 5, 5, 20, 0, 0)),
 
             Event.Create(
                 "Воркшоп Swagger/OpenAPI",
                 "Документирование и тестирование API",
+                1,
                 new DateTime(2026, 5, 8, 14, 0, 0),
                 new DateTime(2026, 5, 8, 16, 30, 0)),
 
             Event.Create(
                 "Конференция Clean Code",
                 "Чистый код, читаемость и поддерживаемость",
+                10,
                 new DateTime(2026, 5, 12, 10, 0, 0),
                 new DateTime(2026, 5, 12, 18, 0, 0)),
 
             Event.Create(
                 "Практика по пагинации",
                 "Skip, Take и работа с коллекциями",
+                5,
                 new DateTime(2026, 5, 15, 13, 0, 0),
                 new DateTime(2026, 5, 15, 15, 0, 0)),
 
             Event.Create(
                 "Финальный митап спринта",
                 "Подведение итогов и разбор проекта",
+                6,
                 new DateTime(2026, 5, 20, 19, 0, 0),
                 new DateTime(2026, 5, 20, 21, 0, 0))
             ];
         }
-
-
     }
 }

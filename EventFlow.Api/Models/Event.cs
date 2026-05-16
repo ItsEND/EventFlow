@@ -42,7 +42,7 @@ public class Event
     /// </summary>
     public DateTime EndAt { get; private set; }
 
-   
+
     private Event(Guid id, string title, string? description, int totalSeats, DateTime startAt, DateTime endAt)
     {
         ValidateOnCreate(title, totalSeats, startAt, endAt);
@@ -73,13 +73,8 @@ public class Event
 
 
     /// <summary>
-    /// 
+    /// Обновляет основные данные мероприятия без изменения количества мест.
     /// </summary>
-    /// <param name="title"></param>
-    /// <param name="description"></param>
-    /// <param name="availableSeats"></param>
-    /// <param name="startAt"></param>
-    /// <param name="endAt"></param>
     public void Update(string title, string? description, DateTime startAt, DateTime endAt)
     {
         ValidateTitle(title);

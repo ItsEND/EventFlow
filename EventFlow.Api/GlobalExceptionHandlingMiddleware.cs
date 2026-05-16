@@ -91,6 +91,7 @@ public class GlobalExceptionHandlingMiddleware
         {
             ValidationException ve => (StatusCodes.Status400BadRequest, "Некорректный запрос", ve.Message),
             NotFoundException nfe => (StatusCodes.Status404NotFound, "Ресурс не найден", nfe.Message),
+            NoAvailableSeatsException nase => (StatusCodes.Status409Conflict, "Конфликт", nase.Message),
             _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка"),
 
         };
@@ -105,6 +106,7 @@ public class GlobalExceptionHandlingMiddleware
         {
             StatusCodes.Status400BadRequest => "https://httpstatuses.com/400",
             StatusCodes.Status404NotFound => "https://httpstatuses.com/404",
+            StatusCodes.Status409Conflict => "https://httpstatuses.com/409",
             _ => "https://httpstatuses.com/500"
         };
 }

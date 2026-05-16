@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EventFlow.Api.Controllers;
 
+
 /// <summary>
 /// Контроллер для управления мероприятиями.
 /// Предоставляет методы для получения, создания, обновления и удаления событий.
 /// </summary>
 /// <param name="_eventService">Сервис для работы с мероприятиями.</param>
+/// <param name="_bookingService">Сервис для работы с бронированием</param>
 [ApiController]
 [Route("events")]
 public class EventController(IEventService _eventService, IBookingService _bookingService) : ControllerBase
@@ -86,7 +88,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
             EndAt = request.EndAt
         });
 
-        return  Ok(DtoHelper.ToEventResponse(await updated));
+        return Ok(DtoHelper.ToEventResponse(await updated));
     }
 
     /// <summary>
@@ -108,6 +110,9 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="ct">Токен отмены запроса.</param>
     /// <returns>Созданная бронь в статусе Pending.</returns>
+    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [HttpPost("{id:guid}/book")]
     public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {
