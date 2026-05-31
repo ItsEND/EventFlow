@@ -12,6 +12,7 @@ public record class EventRequest
     /// Название мероприятия.
     /// </summary>
     [Required(AllowEmptyStrings = false, ErrorMessage = "Название обязательно для заполнения")]
+    [StringLength(200, ErrorMessage = "Максимальная длина названия не может превышать 200 символов")]
     public required string Title { get; init; }
 
     /// <summary>

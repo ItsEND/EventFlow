@@ -17,6 +17,7 @@ public class Booking
     /// <summary>
     /// Идентификатор мероприятия, к которому относится бронь.
     /// </summary>
+    public Event Event { get; private set; } = null!; 
     public Guid EventId { get; init; }
 
     /// <summary>
@@ -35,6 +36,7 @@ public class Booking
     /// </summary>
     public DateTime? ProcessedAt { get; private set; }
 
+    private Booking() { } // Для EF Core
     private Booking(Guid id, Guid eventId)
     {
         Id = id;

@@ -1,10 +1,15 @@
 using EventFlow.Api;
+using EventFlow.Api.DataAccess;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Строка подключения DefaultConnection не найдена.");
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -25,10 +30,12 @@ builder.Services.AddControllers()
 
 builder.Services.AddProblemDetails();
 
-builder.Services.AddSingleton<InMemoryEventStore>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
-builder.Services.AddSingleton<IEventService, EventService>();
-builder.Services.AddSingleton<IBookingService, BookingService>();
+
+builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
 builder.Services.AddHostedService<BookingProcessingBackgroundService>();
@@ -54,6 +61,12 @@ if (builder.Environment.IsDevelopment())
     });
 }
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.

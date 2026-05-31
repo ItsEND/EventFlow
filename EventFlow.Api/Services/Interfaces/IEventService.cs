@@ -16,7 +16,7 @@ public interface IEventService
     /// </summary>
     /// <param name="pageData">Параметры фильтрации и пагинации.</param>
     /// <returns>Постраничный результат с мероприятиями.</returns>
-    Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData);
+    Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData, CancellationToken ct = default);
 
     /// <summary>
     /// Возвращает мероприятие по его идентификатору.
@@ -26,14 +26,14 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    Task<Event> GetEvent(Guid id);
+    Task<Event> GetEventAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Создает новое мероприятие.
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    Task<Event> CreateEventAsync(CreateEventModel newEvent);
+    Task<Event> CreateEventAsync(CreateEventModel newEvent, CancellationToken ct = default);
 
     /// <summary>
     /// Обновляет существующее мероприятие.
@@ -44,7 +44,7 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    Task<Event> UpdateEvent(Guid id, UpdateEventModel updatedEvent);
+    Task<Event> UpdateEventAsync(Guid id, UpdateEventModel updatedEvent, CancellationToken ct = default);
 
     /// <summary>
     /// Удаляет мероприятие по его идентификатору.
@@ -53,5 +53,5 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    Task RemoveEvent(Guid id);
+    Task RemoveEventAsync(Guid id, CancellationToken ct = default);
 }

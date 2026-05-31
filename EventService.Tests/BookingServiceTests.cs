@@ -1,27 +1,40 @@
 ﻿using EventFlow.Api;
+using EventFlow.Api.DataAccess;
 using EventFlow.Api.Models;
-using EventFlow.Api.Services;
-using Microsoft.Extensions.Logging.Abstractions;
+using EventFlow.Api.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventService.Tests;
 
-public class BookingServiceTests
+public class BookingServiceTests : IDisposable
 {
-    private readonly EventFlow.Api.Services.EventService _eventService;
-    private readonly BookingService _bookingService;
-    private readonly InMemoryBookingTaskQueue _bookingTaskQueue;
+    private readonly ServiceProvider _provider;
+    private readonly IServiceScope _scope;
+    private readonly IEventService _eventService;
+    private readonly IBookingService _bookingService;
     private readonly List<Event> _seedEvents;
 
     public BookingServiceTests()
     {
+        _provider = TestServiceProviderFactory.Create();
+
         _seedEvents = SeedEvents();
+        AddEvents(_seedEvents);
 
-        var eventStore = new InMemoryEventStore(_seedEvents);
+        _scope = _provider.CreateScope();
 
-        _eventService = new EventFlow.Api.Services.EventService(eventStore);
-        _bookingTaskQueue = new InMemoryBookingTaskQueue();
+        _eventService =
+            _scope.ServiceProvider.GetRequiredService<IEventService>();
 
-        _bookingService = new BookingService(_eventService, _bookingTaskQueue, NullLogger<BookingService>.Instance);
+        _bookingService =
+            _scope.ServiceProvider.GetRequiredService<IBookingService>();
+    }
+
+    public void Dispose()
+    {
+        _scope.Dispose();
+        _provider.Dispose();
     }
 
     [Fact]
@@ -133,7 +146,7 @@ public class BookingServiceTests
     {
         // Arrange
         var eventId = _seedEvents.First().Id;
-        await _eventService.RemoveEvent(eventId);
+        await _eventService.RemoveEventAsync(eventId, CancellationToken.None);
 
         // Act
         var action = async () =>
@@ -173,12 +186,17 @@ public class BookingServiceTests
     [Fact]
     public async Task CreateBookingAsync_ShouldDecreaseAvailableSeatsByOne()
     {
-        var ev = _seedEvents.First();
-        var before = ev.AvailableSeats;
+        var eventId = _seedEvents.First().Id;
 
-        await _bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+        var before = await GetAvailableSeatsAsync(eventId);
 
-        Assert.Equal(before - 1, ev.AvailableSeats);
+        await _bookingService.CreateBookingAsync(
+            eventId,
+            CancellationToken.None);
+
+        var after = await GetAvailableSeatsAsync(eventId);
+
+        Assert.Equal(before - 1, after);
     }
 
     [Fact]
@@ -191,19 +209,20 @@ public class BookingServiceTests
             new DateTime(2026, 6, 1, 10, 0, 0),
             new DateTime(2026, 6, 1, 12, 0, 0));
 
-        var store = new InMemoryEventStore([ev]);
-        var eventService = new EventFlow.Api.Services.EventService(store);
-        var queue = new InMemoryBookingTaskQueue();
-        var logger = NullLogger<BookingService>.Instance;
+        AddEvent(ev);
 
-        var bookingService = new BookingService(eventService, queue, logger);
-
-        await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+        await _bookingService.CreateBookingAsync(
+            ev.Id,
+            CancellationToken.None);
 
         await Assert.ThrowsAsync<NoAvailableSeatsException>(() =>
-            bookingService.CreateBookingAsync(ev.Id, CancellationToken.None));
+            _bookingService.CreateBookingAsync(
+                ev.Id,
+                CancellationToken.None));
 
-        Assert.Equal(0, ev.AvailableSeats);
+        var availableSeats = await GetAvailableSeatsAsync(ev.Id);
+
+        Assert.Equal(0, availableSeats);
     }
 
     [Fact]
@@ -216,39 +235,67 @@ public class BookingServiceTests
             new DateTime(2026, 6, 1, 10, 0, 0),
             new DateTime(2026, 6, 1, 12, 0, 0));
 
-        var store = new InMemoryEventStore([ev]);
-        var eventService = new EventFlow.Api.Services.EventService(store);
-        var queue = new InMemoryBookingTaskQueue();
-        var bookingService = new BookingService(
-            eventService,
-            queue,
-            NullLogger<BookingService>.Instance);
+        AddEvent(ev);
 
-        var tasks = Enumerable.Range(0, 20)
+        const int concurrentRequests = 20;
+
+        var tasks = Enumerable.Range(0, concurrentRequests)
             .Select(_ => Task.Run(async () =>
             {
+                using var scope = _provider.CreateScope();
+
+                var bookingService =
+                    scope.ServiceProvider.GetRequiredService<IBookingService>();
+
                 try
                 {
-                    var booking = await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
-                    return (Success: true, Booking: booking, Exception: (Exception?)null);
+                    var booking = await bookingService.CreateBookingAsync(
+                        ev.Id,
+                        CancellationToken.None);
+
+                    return (
+                        Success: true,
+                        Booking: booking,
+                        Exception: (Exception?)null);
                 }
                 catch (Exception ex)
                 {
-                    return (Success: false, Booking: (Booking?)null, Exception: ex);
+                    return (
+                        Success: false,
+                        Booking: (Booking?)null,
+                        Exception: ex);
                 }
             }))
             .ToArray();
 
         var results = await Task.WhenAll(tasks);
 
-        var successful = results.Where(x => x.Success).ToList();
-        var failed = results.Where(x => !x.Success).ToList();
+        var successful = results
+            .Where(result => result.Success)
+            .ToList();
+
+        var failed = results
+            .Where(result => !result.Success)
+            .ToList();
 
         Assert.Equal(5, successful.Count);
         Assert.Equal(15, failed.Count);
-        Assert.All(failed, x => Assert.IsType<NoAvailableSeatsException>(x.Exception));
-        Assert.Equal(0, ev.AvailableSeats);
-        Assert.Equal(successful.Count, successful.Select(x => x.Booking!.Id).Distinct().Count());
+
+        Assert.All(
+            failed,
+            result =>
+                Assert.IsType<NoAvailableSeatsException>(
+                    result.Exception));
+
+        Assert.Equal(
+            successful.Count,
+            successful
+                .Select(result => result.Booking!.Id)
+                .Distinct()
+                .Count());
+
+        Assert.Equal(0, await GetAvailableSeatsAsync(ev.Id));
+        Assert.Equal(5, await GetBookingCountAsync(ev.Id));
     }
 
     [Fact]
@@ -261,25 +308,39 @@ public class BookingServiceTests
             new DateTime(2026, 6, 1, 10, 0, 0),
             new DateTime(2026, 6, 1, 12, 0, 0));
 
-        var store = new InMemoryEventStore([ev]);
-        var eventService = new EventFlow.Api.Services.EventService(store);
-        var queue = new InMemoryBookingTaskQueue();
-        var bookingService = new BookingService(
-            eventService,
-            queue,
-            NullLogger<BookingService>.Instance);
+        AddEvent(ev);
 
-        var tasks = Enumerable.Range(0, 10)
-            .Select(_ => Task.Run(() =>
-                bookingService.CreateBookingAsync(ev.Id, CancellationToken.None)))
+        const int concurrentRequests = 10;
+
+        var tasks = Enumerable.Range(0, concurrentRequests)
+            .Select(_ => Task.Run(async () =>
+            {
+                using var scope = _provider.CreateScope();
+
+                var bookingService =
+                    scope.ServiceProvider.GetRequiredService<IBookingService>();
+
+                return await bookingService.CreateBookingAsync(
+                    ev.Id,
+                    CancellationToken.None);
+            }))
             .ToArray();
 
         var bookings = await Task.WhenAll(tasks);
 
         Assert.Equal(10, bookings.Length);
-        Assert.Equal(10, bookings.Select(x => x.Id).Distinct().Count());
-        Assert.Equal(0, ev.AvailableSeats);
+
+        Assert.Equal(
+            10,
+            bookings
+                .Select(booking => booking.Id)
+                .Distinct()
+                .Count());
+
+        Assert.Equal(0, await GetAvailableSeatsAsync(ev.Id));
+        Assert.Equal(10, await GetBookingCountAsync(ev.Id));
     }
+
     [Fact]
     public void ReleaseSeats_ShouldRestoreSeat_AfterBookingRejected()
     {
@@ -319,7 +380,52 @@ public class BookingServiceTests
         Assert.True(ev.TryReserveSeats());
         Assert.Equal(0, ev.AvailableSeats);
     }
+    private void AddEvents(IEnumerable<Event> events)
+    {
+        using var scope = _provider.CreateScope();
 
+        var context =
+            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        context.Events.AddRange(events);
+        context.SaveChanges();
+    }
+
+    private void AddEvent(Event ev)
+    {
+        using var scope = _provider.CreateScope();
+
+        var context =
+            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        context.Events.Add(ev);
+        context.SaveChanges();
+    }
+
+    private async Task<int> GetAvailableSeatsAsync(Guid eventId)
+    {
+        await using var scope = _provider.CreateAsyncScope();
+
+        var context =
+            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        return await context.Events
+            .AsNoTracking()
+            .Where(ev => ev.Id == eventId)
+            .Select(ev => ev.AvailableSeats)
+            .SingleAsync();
+    }
+
+    private async Task<int> GetBookingCountAsync(Guid eventId)
+    {
+        await using var scope = _provider.CreateAsyncScope();
+
+        var context =
+            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        return await context.Bookings
+            .CountAsync(booking => booking.EventId == eventId);
+    }
     private static List<Event> SeedEvents()
     {
         return
