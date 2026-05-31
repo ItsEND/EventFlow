@@ -1,7 +1,9 @@
 ﻿using EventFlow.Api.Contracts;
 using EventFlow.Api.Contracts.Events;
+using EventFlow.Api.DataAccess;
 using EventFlow.Api.Models;
 using EventFlow.Api.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api.Services;
@@ -13,18 +15,17 @@ namespace EventFlow.Api.Services;
 /// </summary>
 public class EventService : IEventService
 {
-    private readonly InMemoryEventStore _eventStore;
+    private readonly AppDbContext _context;
 
     /// <summary>
     /// Инициализирует новый экземпляр сервиса мероприятий.
     /// </summary>
-    /// <param name="initialEvents">
-    /// Начальный набор мероприятий. Если значение не передано,
-    /// создаётся пустая коллекция.
+    /// <param name="context">
+    /// Контекст базы данных.
     /// </param>
-    public EventService(InMemoryEventStore eventStore)
+    public EventService(AppDbContext context)
     {
-        _eventStore = eventStore;
+        _context = context;
     }
 
 
@@ -36,27 +37,25 @@ public class EventService : IEventService
     /// <exception cref="ValidationException">
     /// Выбрасывается, если параметры пагинации некорректны.
     /// </exception>
-    public Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData)
+    public async Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData, CancellationToken ct = default)
     {
         ValidatePagination(pageData.Page, pageData.PageSize);
 
-        var filteredEvents = ApplyFilters(_eventStore.GetAll(), pageData.Title, pageData.From, pageData.To).ToList();
+        var filteredEvents = ApplyFilters(pageData.Title, pageData.From, pageData.To);
 
-        var totalItems = filteredEvents.Count;
+        var totalItems = await filteredEvents.CountAsync(ct);
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageData.PageSize);
 
-        var items = ApplyPaging(filteredEvents, pageData.Page, pageData.PageSize);
+        var items = await ApplyPaging(filteredEvents, pageData.Page, pageData.PageSize);
         var totalItemsOnPage = items.Count;
 
-        var result = new PaginatedResult<Event>(
+        return new PaginatedResult<Event>(
             items,
             pageData.Page,
             pageData.PageSize,
             totalPages,
             totalItems,
             totalItemsOnPage);
-
-        return Task.FromResult(result);
     }
 
 
@@ -68,11 +67,10 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public Task<Event> GetEvent(Guid id)
+    public async Task<Event> GetEventAsync(Guid id, CancellationToken ct)
     {
-        var ev = _eventStore.Get(id);
-
-        return Task.FromResult(ev);
+        return await _context.Events.FindAsync([id], ct)
+            ?? throw new NotFoundException("Event", id);
     }
 
     /// <summary>
@@ -80,7 +78,7 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    public Task<Event> CreateEventAsync(CreateEventModel newEvent)
+    public async Task<Event> CreateEventAsync(CreateEventModel newEvent, CancellationToken ct)
     {
         var createdEvent = Event.Create(
             newEvent.Title,
@@ -89,9 +87,10 @@ public class EventService : IEventService
             newEvent.StartAt,
             newEvent.EndAt);
 
-        _eventStore.Add(createdEvent);
+        _context.Events.Add(createdEvent);
 
-        return Task.FromResult(createdEvent);
+        await _context.SaveChangesAsync(ct);
+        return createdEvent;
     }
 
     /// <summary>
@@ -103,9 +102,9 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public Task<Event> UpdateEvent(Guid id, UpdateEventModel updatedEvent)
+    public async Task<Event> UpdateEventAsync(Guid id, UpdateEventModel updatedEvent, CancellationToken ct)
     {
-        var existingEvent = _eventStore.Get(id);
+        var existingEvent = await GetEventAsync(id, ct);
 
         existingEvent.Update(
             updatedEvent.Title,
@@ -113,7 +112,8 @@ public class EventService : IEventService
             updatedEvent.StartAt,
             updatedEvent.EndAt);
 
-        return Task.FromResult(existingEvent);
+        await _context.SaveChangesAsync(ct);
+        return existingEvent;
     }
 
     /// <summary>
@@ -123,10 +123,11 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public Task RemoveEvent(Guid id)
+    public async Task RemoveEventAsync(Guid id, CancellationToken ct)
     {
-        _eventStore.Remove(id);
-        return Task.CompletedTask;
+        var ev = await GetEventAsync(id, ct);
+        _context.Events.Remove(ev);
+        await _context.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -162,9 +163,9 @@ public class EventService : IEventService
     /// <param name="dateFrom">Нижняя граница даты начала.</param>
     /// <param name="dateTo">Верхняя граница даты окончания.</param>
     /// <returns>Отфильтрованная последовательность мероприятий.</returns>
-    private IEnumerable<Event> ApplyFilters(IEnumerable<Event> events, string? title, DateTime? dateFrom, DateTime? dateTo)
+    private IQueryable<Event> ApplyFilters(string? title, DateTime? dateFrom, DateTime? dateTo)
     {
-        var query = events;
+        var query = _context.Events.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(title))
         {
@@ -192,12 +193,13 @@ public class EventService : IEventService
     /// <param name="page">Номер страницы.</param>
     /// <param name="pageSize">Размер страницы.</param>
     /// <returns>Список мероприятий для указанной страницы.</returns>
-    private static List<Event> ApplyPaging(IEnumerable<Event> query, int page, int pageSize)
+    private static Task<List<Event>> ApplyPaging(IQueryable<Event> query, int page, int pageSize)
     {
         return query
             .OrderByDescending(e => e.StartAt)
+                .ThenBy(e => e.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync();
     }
 }

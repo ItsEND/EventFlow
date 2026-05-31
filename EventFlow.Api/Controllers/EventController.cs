@@ -45,7 +45,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<EventResponse>> GetEventById(Guid id)
     {
-        var ev = _eventService.GetEvent(id);
+        var ev = _eventService.GetEventAsync(id);
         return Ok(DtoHelper.ToEventResponse(await ev));
     }
 
@@ -80,7 +80,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
-        var updated = _eventService.UpdateEvent(id, new UpdateEventModel
+        var updated = _eventService.UpdateEventAsync(id, new UpdateEventModel
         {
             Title = request.Title,
             Description = request.Description,
@@ -99,7 +99,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _eventService.RemoveEvent(id);
+        await _eventService.RemoveEventAsync(id);
         return NoContent();
     }
 

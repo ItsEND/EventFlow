@@ -15,7 +15,7 @@ public class Event
     /// <summary>
     /// Название мероприятия.
     /// </summary>
-    public string Title { get; private set; }
+    public string Title { get; private set; } = null!;
 
     /// <summary>
     /// Описание мероприятия.
@@ -42,6 +42,9 @@ public class Event
     /// </summary>
     public DateTime EndAt { get; private set; }
 
+    public ICollection<Booking> Bookings { get; private set; } = [];
+
+    private Event() { } // Для EF Core
 
     private Event(Guid id, string title, string? description, int totalSeats, DateTime startAt, DateTime endAt)
     {

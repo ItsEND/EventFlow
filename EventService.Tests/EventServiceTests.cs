@@ -1,320 +1,341 @@
 ﻿using EventFlow.Api;
 using EventFlow.Api.Contracts.Events;
+using EventFlow.Api.DataAccess;
 using EventFlow.Api.Models;
-using EventFlow.Api.Services;
+using EventFlow.Api.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventService.Tests
+namespace EventService.Tests;
+
+public class EventServiceTests : IDisposable
 {
-    public class EventServiceTests
+    private readonly ServiceProvider _provider;
+    private readonly IServiceScope _scope;
+    private readonly IEventService _eventService;
+    private readonly List<Event> _seedEvents;
+
+    public EventServiceTests()
     {
-        private readonly EventFlow.Api.Services.EventService _eventService;
-        private readonly List<Event> _seedEvents;
+        _provider = TestServiceProviderFactory.Create();
 
-        public EventServiceTests()
+        _seedEvents = SeedEvents();
+
+        using (var seedScope = _provider.CreateScope())
         {
-            _seedEvents = SeedEvents();
+            var context =
+                seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var eventStore = new InMemoryEventStore(_seedEvents);
-
-            _eventService = new EventFlow.Api.Services.EventService(eventStore);
+            context.Events.AddRange(_seedEvents);
+            context.SaveChanges();
         }
 
-        [Fact]
-        public async Task AddEvent_ShouldCreateEvent()
+        _scope = _provider.CreateScope();
+
+        _eventService =
+            _scope.ServiceProvider.GetRequiredService<IEventService>();
+    }
+
+    public void Dispose()
+    {
+        _scope.Dispose();
+        _provider.Dispose();
+    }
+    [Fact]
+    public async Task AddEvent_ShouldCreateEvent()
+    {
+        // Arrange
+        var newEvent = new CreateEventModel
         {
-            // Arrange
-            var newEvent = new CreateEventModel
-            {
-                Title = "Новый Митап",
-                Description = "Описание нового митапа",
-                TotalSeats = 10,
-                StartAt = new DateTime(2026, 6, 1, 18, 0, 0),
-                EndAt = new DateTime(2026, 6, 1, 20, 0, 0)
-            };
+            Title = "Новый Митап",
+            Description = "Описание нового митапа",
+            TotalSeats = 10,
+            StartAt = new DateTime(2026, 6, 1, 18, 0, 0),
+            EndAt = new DateTime(2026, 6, 1, 20, 0, 0)
+        };
 
-            var beforeCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
+        var beforeCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-            // Act
-            var created = await _eventService.CreateEventAsync(newEvent);
+        // Act
+        var created = await _eventService.CreateEventAsync(newEvent, CancellationToken.None);
 
-            var after = await _eventService.GetEvent(created.Id);
-            var afterCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
+        var after = await _eventService.GetEventAsync(created.Id, CancellationToken.None);
+        var afterCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-            // Assert
-            Assert.NotNull(created);
-            Assert.Equal(beforeCount + 1, afterCount);
+        // Assert
+        Assert.NotNull(created);
+        Assert.Equal(beforeCount + 1, afterCount);
 
-            Assert.Equal(newEvent.Title, after.Title);
-            Assert.Equal(newEvent.Description, after.Description);
-            Assert.Equal(newEvent.TotalSeats, after.TotalSeats);
-            Assert.Equal(newEvent.TotalSeats, after.AvailableSeats);
-            Assert.Equal(newEvent.StartAt, after.StartAt);
-            Assert.Equal(newEvent.EndAt, after.EndAt);
-        }
+        Assert.Equal(newEvent.Title, after.Title);
+        Assert.Equal(newEvent.Description, after.Description);
+        Assert.Equal(newEvent.TotalSeats, after.TotalSeats);
+        Assert.Equal(newEvent.TotalSeats, after.AvailableSeats);
+        Assert.Equal(newEvent.StartAt, after.StartAt);
+        Assert.Equal(newEvent.EndAt, after.EndAt);
+    }
 
-        [Fact]
-        public async Task GetEvents_ReturnsAllEvents()
+    [Fact]
+    public async Task GetEvents_ReturnsAllEvents()
+    {
+        // Arrange
+        var expectedCount = _seedEvents.Count;
+
+        var query = new GetEventsQuery
         {
-            // Arrange
-            var expectedCount = _seedEvents.Count;
+            Page = 1,
+            PageSize = 50
+        };
 
-            var query = new GetEventsQuery
-            {
-                Page = 1,
-                PageSize = 50
-            };
+        // Act
+        var result = await _eventService.GetEvents(query, CancellationToken.None);
 
-            // Act
-            var result = await _eventService.GetEvents(query);
+        // Assert
+        Assert.Equal(expectedCount, result.TotalItems);
+        Assert.Equal(expectedCount, result.Items.Count());
+    }
 
-            // Assert
-            Assert.Equal(expectedCount, result.TotalItems);
-            Assert.Equal(expectedCount, result.Items.Count());
-        }
+    [Fact]
+    public async Task GetEvent_ShouldReturnWhenIdExists()
+    {
+        //Arrange
+        var existingEvent = _seedEvents.First();
 
-        [Fact]
-        public async Task GetEvent_ShouldReturnWhenIdExists()
+        //Act
+        var result = await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None);
+
+        //Assert
+        Assert.NotNull(result);
+        Assert.Equal(existingEvent.Id, result.Id);
+        Assert.Equal(existingEvent.Title, result.Title);
+        Assert.Equal(existingEvent.Description, result.Description);
+        Assert.Equal(existingEvent.StartAt, result.StartAt);
+        Assert.Equal(existingEvent.EndAt, result.EndAt);
+    }
+
+    [Fact]
+    public async Task UpdateEvent_ShouldModifyExistingEvent()
+    {
+        //Arrange
+        var existingEvent = _seedEvents.First();
+        var updateModel = new UpdateEventModel
         {
-            //Arrange
-            var existingEvent = _seedEvents.First();
+            Title = "Обновленное название",
+            Description = "Обновленное описание",
+            StartAt = existingEvent.StartAt.AddHours(1),
+            EndAt = existingEvent.EndAt.AddHours(1)
+        };
 
-            //Act
-            var result = await _eventService.GetEvent(existingEvent.Id);
+        //Act
+        var updated = await _eventService.UpdateEventAsync(existingEvent.Id, updateModel, CancellationToken.None);
+        var afterUpdate = await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None);
 
-            //Assert
-            Assert.NotNull(result);
-            Assert.Equal(existingEvent.Id, result.Id);
-            Assert.Equal(existingEvent.Title, result.Title);
-            Assert.Equal(existingEvent.Description, result.Description);
-            Assert.Equal(existingEvent.StartAt, result.StartAt);
-            Assert.Equal(existingEvent.EndAt, result.EndAt);
-        }
+        //Assert
+        Assert.NotNull(updated);
+        Assert.Equal(existingEvent.Id, updated.Id);
+        Assert.Equal(updateModel.Title, afterUpdate.Title);
+        Assert.Equal(updateModel.Description, afterUpdate.Description);
+        Assert.Equal(updateModel.StartAt, afterUpdate.StartAt);
+        Assert.Equal(updateModel.EndAt, afterUpdate.EndAt);
+    }
 
-        [Fact]
-        public async Task UpdateEvent_ShouldModifyExistingEvent()
+    [Fact]
+    public async Task RemoveEvent_ShouldDeleteExistingEvent()
+    {
+        //Arrange
+        var existingEvent = _seedEvents.First();
+        var beforeCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+
+        //Act
+        await _eventService.RemoveEventAsync(existingEvent.Id, CancellationToken.None);
+        var afterCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+
+        //Assert
+        Assert.Equal(beforeCount - 1, afterCount);
+        await Assert.ThrowsAsync<NotFoundException>(async () => await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task FilterByTitle_ReturnsMatchingEvents()
+    {
+        //Arrange
+        var searchSubstring = ".NET";
+        var expectedResult = new List<string> { "Конференция .NET Backend", "Митап по ASP.NET Core" };
+        var notExpectedResult = new List<string> { "Митап C# Junior", "Воркшоп по LINQ", "Архитектура REST API" };
+        var pageData = new GetEventsQuery { Title = searchSubstring };
+
+        //Act
+        var result = (await _eventService.GetEvents(pageData, CancellationToken.None)).Items;
+
+        //Assert
+        Assert.All(result, ev => expectedResult.Contains(ev.Title));
+        Assert.DoesNotContain(result.Select(ev => ev.Title), title => notExpectedResult.Contains(title));
+    }
+
+    [Fact]
+    public async Task GetEvents_ShouldFilterByDateRange()
+    {
+        //Arrange
+
+        var query = new GetEventsQuery
         {
-            //Arrange
-            var existingEvent = _seedEvents.First();
-            var updateModel = new UpdateEventModel
-            {
-                Title = "Обновленное название",
-                Description = "Обновленное описание",
-                StartAt = existingEvent.StartAt.AddHours(1),
-                EndAt = existingEvent.EndAt.AddHours(1)
-            };
+            From = new DateTime(2026, 5, 1),
+            To = new DateTime(2026, 5, 10, 23, 59, 59)
+        };
 
-            //Act
-            var updated = await _eventService.UpdateEvent(existingEvent.Id, updateModel);
-            var afterUpdate = await _eventService.GetEvent(existingEvent.Id);
+        //Act
+        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var titles = result.Items.Select(e => e.Title).ToList();
 
-            //Assert
-            Assert.NotNull(updated);
-            Assert.Equal(existingEvent.Id, updated.Id);
-            Assert.Equal(updateModel.Title, afterUpdate.Title);
-            Assert.Equal(updateModel.Description, afterUpdate.Description);
-            Assert.Equal(updateModel.StartAt, afterUpdate.StartAt);
-            Assert.Equal(updateModel.EndAt, afterUpdate.EndAt);
-        }
+        //Assert
+        Assert.Equal(3, result.TotalItems);
+        Assert.Contains("Docker для разработчиков", titles);
+        Assert.Contains("Митап по ASP.NET Core", titles);
+        Assert.Contains("Воркшоп Swagger/OpenAPI", titles);
+    }
 
-        [Fact]
-        public async Task RemoveEvent_ShouldDeleteExistingEvent()
+    [Fact]
+    public async Task GetEvents_ShouldReturnRequestedPage()
+    {
+        // Arrange
+        var query = new GetEventsQuery
         {
-            //Arrange
-            var existingEvent = _seedEvents.First();
-            var beforeCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
+            Page = 2,
+            PageSize = 5
+        };
 
-            //Act
-            await _eventService.RemoveEvent(existingEvent.Id);
-            var afterCount = (await _eventService.GetEvents(new GetEventsQuery())).TotalItems;
+        var expectedPageItems = _seedEvents
+            .OrderByDescending(x => x.StartAt)
+            .Skip(5)
+            .Take(5)
+            .ToList();
 
-            //Assert
-            Assert.Equal(beforeCount - 1, afterCount);
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _eventService.GetEvent(existingEvent.Id));
-        }
+        // Act
+        var result = await _eventService.GetEvents(query, CancellationToken.None);
 
-        [Fact]
-        public async Task FilterByTitle_ReturnsMatchingEvents()
+        // Assert
+        Assert.Equal(2, result.CurrentPage);
+        Assert.Equal(5, result.PageSize);
+        Assert.Equal(12, result.TotalItems);
+        Assert.Equal(3, result.TotalPages);
+        Assert.Equal(5, result.TotalItemsOnPage);
+        Assert.Equal(expectedPageItems.Select(x => x.Id), result.Items.Select(x => x.Id));
+    }
+
+    [Fact]
+    public async Task GetEvents_ShouldApplyCombinedFilters()
+    {
+        //Arrange
+        var query = new GetEventsQuery
         {
-            //Arrange
-            var searchSubstring = ".NET";
-            var expectedResult = new List<string> { "Конференция .NET Backend", "Митап по ASP.NET Core" };
-            var notExpectedResult = new List<string> { "Митап C# Junior", "Воркшоп по LINQ", "Архитектура REST API" };
-            var pageData = new GetEventsQuery { Title = searchSubstring };
+            Title = "Митап",
+            From = new DateTime(2026, 5, 1),
+            To = new DateTime(2026, 5, 31, 23, 59, 59)
+        };
 
-            //Act
-            var result = (await _eventService.GetEvents(pageData)).Items;
+        //Act
+        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var titles = result.Items.Select(e => e.Title).ToList();
 
-            //Assert
-            Assert.All(result, ev => expectedResult.Contains(ev.Title));
-            Assert.DoesNotContain(result.Select(ev => ev.Title), title => notExpectedResult.Contains(title));
-        }
+        //Assert
+        Assert.Equal(2, result.TotalItems);
+        Assert.Contains("Митап по ASP.NET Core", titles);
+        Assert.Contains("Финальный митап спринта", titles);
+    }
 
-        [Fact]
-        public async Task GetEvents_ShouldFilterByDateRange()
+    [Fact]
+    public async Task GetEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+    {
+        //Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        //Act
+        var action = async () => await _eventService.GetEventAsync(nonExistentId);
+
+        //Assert
+        await Assert.ThrowsAsync<NotFoundException>(action);
+    }
+
+    [Fact]
+    public async Task UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        var updateModel = new UpdateEventModel
         {
-            //Arrange
+            Title = "Обновление",
+            Description = "Описание",
+            StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
+            EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
+        };
 
-            var query = new GetEventsQuery
-            {
-                From = new DateTime(2026, 5, 1),
-                To = new DateTime(2026, 5, 10, 23, 59, 59)
-            };
+        // Act
+        var action = async () => await _eventService.UpdateEventAsync(id, updateModel);
 
-            //Act
-            var result = await _eventService.GetEvents(query);
-            var titles = result.Items.Select(e => e.Title).ToList();
+        // Assert
+        await Assert.ThrowsAsync<NotFoundException>(action);
+    }
 
-            //Assert
-            Assert.Equal(3, result.TotalItems);
-            Assert.Contains("Docker для разработчиков", titles);
-            Assert.Contains("Митап по ASP.NET Core", titles);
-            Assert.Contains("Воркшоп Swagger/OpenAPI", titles);
-        }
-
-        [Fact]
-        public async Task GetEvents_ShouldReturnRequestedPage()
+    [Fact]
+    public async Task AddEvent_ShouldThrowValidationException_WhenTitleIsInvalid()
+    {
+        // Arrange
+        var invalidEvent = new CreateEventModel
         {
-            // Arrange
-            var query = new GetEventsQuery
-            {
-                Page = 2,
-                PageSize = 5
-            };
+            Title = "   ",
+            Description = "Описание",
+            TotalSeats = 10,
+            StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
+            EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
+        };
 
-            var expectedPageItems = _seedEvents
-                .OrderByDescending(x => x.StartAt)
-                .Skip(5)
-                .Take(5)
-                .ToList();
+        // Act
+        var action = async () => await _eventService.CreateEventAsync(invalidEvent, CancellationToken.None);
 
-            // Act
-            var result = await _eventService.GetEvents(query);
-
-            // Assert
-            Assert.Equal(2, result.CurrentPage);
-            Assert.Equal(5, result.PageSize);
-            Assert.Equal(12, result.TotalItems);
-            Assert.Equal(3, result.TotalPages);
-            Assert.Equal(5, result.TotalItemsOnPage);
-            Assert.Equal(expectedPageItems.Select(x => x.Id), result.Items.Select(x => x.Id));
-        }
-
-        [Fact]
-        public async Task GetEvents_ShouldApplyCombinedFilters()
+        // Assert
+        await Assert.ThrowsAsync<ValidationException>(action);
+    }
+    [Fact]
+    public async Task AddEvent_ShouldThrowValidationException_WhenTotalSeatsIsNotPositive()
+    {
+        var invalidEvent = new CreateEventModel
         {
-            //Arrange
-            var query = new GetEventsQuery
-            {
-                Title = "Митап",
-                From = new DateTime(2026, 5, 1),
-                To = new DateTime(2026, 5, 31, 23, 59, 59)
-            };
+            Title = "Event",
+            Description = "Описание",
+            TotalSeats = 0,
+            StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
+            EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
+        };
 
-            //Act
-            var result = await _eventService.GetEvents(query);
-            var titles = result.Items.Select(e => e.Title).ToList();
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            _eventService.CreateEventAsync(invalidEvent, CancellationToken.None));
+    }
+    [Fact]
+    public async Task UpdateEvent_ShouldThrowValidationException_WhenEndAtEarlierThanStartAt()
+    {
+        // Arrange
+        var existingEvent = _seedEvents.First();
 
-            //Assert
-            Assert.Equal(2, result.TotalItems);
-            Assert.Contains("Митап по ASP.NET Core", titles);
-            Assert.Contains("Финальный митап спринта", titles);
-        }
-
-        [Fact]
-        public async Task GetEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+        var invalidUpdate = new UpdateEventModel
         {
-            //Arrange
-            var nonExistentId = Guid.NewGuid();
+            Title = "Некорректное обновление",
+            Description = "Описание",
+            StartAt = new DateTime(2026, 6, 10, 15, 0, 0),
+            EndAt = new DateTime(2026, 6, 10, 10, 0, 0)
+        };
 
-            //Act
-            var action = async () => await _eventService.GetEvent(nonExistentId);
+        // Act
+        var action = async () => await _eventService.UpdateEventAsync(existingEvent.Id, invalidUpdate, CancellationToken.None);
 
-            //Assert
-            await Assert.ThrowsAsync<NotFoundException>(action);
-        }
+        // Assert
+        await Assert.ThrowsAsync<ValidationException>(action);
+    }
 
-        [Fact]
-        public async Task UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
-        {
-            // Arrange
-            var id = Guid.NewGuid();
-
-            var updateModel = new UpdateEventModel
-            {
-                Title = "Обновление",
-                Description = "Описание",
-                StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
-                EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
-            };
-
-            // Act
-            var action = async () => await _eventService.UpdateEvent(id, updateModel);
-
-            // Assert
-            await Assert.ThrowsAsync<NotFoundException>(action);
-        }
-
-        [Fact]
-        public async Task AddEvent_ShouldThrowValidationException_WhenTitleIsInvalid()
-        {
-            // Arrange
-            var invalidEvent = new CreateEventModel
-            {
-                Title = "   ",
-                Description = "Описание",
-                TotalSeats = 10,
-                StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
-                EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
-            };
-
-            // Act
-            var action = async () => await _eventService.CreateEventAsync(invalidEvent);
-
-            // Assert
-            await Assert.ThrowsAsync<ValidationException>(action);
-        }
-        [Fact]
-        public async Task AddEvent_ShouldThrowValidationException_WhenTotalSeatsIsNotPositive()
-        {
-            var invalidEvent = new CreateEventModel
-            {
-                Title = "Event",
-                Description = "Описание",
-                TotalSeats = 0,
-                StartAt = new DateTime(2026, 6, 1, 10, 0, 0),
-                EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
-            };
-
-            await Assert.ThrowsAsync<ValidationException>(() =>
-                _eventService.CreateEventAsync(invalidEvent));
-        }
-        [Fact]
-        public async Task UpdateEvent_ShouldThrowValidationException_WhenEndAtEarlierThanStartAt()
-        {
-            // Arrange
-            var existingEvent = _seedEvents.First();
-
-            var invalidUpdate = new UpdateEventModel
-            {
-                Title = "Некорректное обновление",
-                Description = "Описание",
-                StartAt = new DateTime(2026, 6, 10, 15, 0, 0),
-                EndAt = new DateTime(2026, 6, 10, 10, 0, 0)
-            };
-
-            // Act
-            var action = async () => await _eventService.UpdateEvent(existingEvent.Id, invalidUpdate);
-
-            // Assert
-            await Assert.ThrowsAsync<ValidationException>(action);
-        }
-
-        private static List<Event> SeedEvents()
-        {
-            return
-            [
-            Event.Create(
+    private static List<Event> SeedEvents()
+    {
+        return
+        [
+        Event.Create(
                 "Конференция .NET Backend",
                 "Практики построения Web API на ASP.NET Core",
                 10,
@@ -397,7 +418,6 @@ namespace EventService.Tests
                 6,
                 new DateTime(2026, 5, 20, 19, 0, 0),
                 new DateTime(2026, 5, 20, 21, 0, 0))
-            ];
-        }
+        ];
     }
 }
