@@ -16,7 +16,7 @@ public interface IEventService
     /// </summary>
     /// <param name="pageData">Параметры фильтрации и пагинации.</param>
     /// <returns>Постраничный результат с мероприятиями.</returns>
-    PaginatedResult<Event> GetEvents(GetEventsQuery pageData);
+    Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData);
 
     /// <summary>
     /// Возвращает мероприятие по его идентификатору.
@@ -26,14 +26,14 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    Event GetEvent(Guid id);
+    Task<Event> GetEvent(Guid id);
 
     /// <summary>
     /// Создает новое мероприятие.
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    Event AddEvent(CreateEventModel newEvent);
+    Task<Event> CreateEventAsync(CreateEventModel newEvent);
 
     /// <summary>
     /// Обновляет существующее мероприятие.
@@ -44,7 +44,7 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    Event UpdateEvent(Guid id, UpdateEventModel updatedEvent);
+    Task<Event> UpdateEvent(Guid id, UpdateEventModel updatedEvent);
 
     /// <summary>
     /// Удаляет мероприятие по его идентификатору.
@@ -53,5 +53,5 @@ public interface IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие с указанным идентификатором не найдено.
     /// </exception>
-    void RemoveEvent(Guid id);
+    Task RemoveEvent(Guid id);
 }

@@ -21,6 +21,13 @@ public record class EventRequest
     public string? Description { get; init; }
 
     /// <summary>
+    /// Общее количество мест на событии
+    /// </summary>
+    [Required(ErrorMessage = "Количество мест обязательно")]
+    [Range(1, int.MaxValue, ErrorMessage = "Количество мест должно быть больше нуля")]
+    public int? TotalSeats { get; init; }
+
+    /// <summary>
     /// Дата и время начала мероприятия.
     /// </summary>
     [Required(ErrorMessage = "Дата начала обязательна")]

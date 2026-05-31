@@ -13,7 +13,7 @@ namespace EventFlow.Api.Services;
 /// </summary>
 public class EventService : IEventService
 {
-    private readonly List<Event> _events;
+    private readonly InMemoryEventStore _eventStore;
 
     /// <summary>
     /// Инициализирует новый экземпляр сервиса мероприятий.
@@ -22,10 +22,11 @@ public class EventService : IEventService
     /// Начальный набор мероприятий. Если значение не передано,
     /// создаётся пустая коллекция.
     /// </param>
-    public EventService(IEnumerable<Event>? initialEvents = null)
+    public EventService(InMemoryEventStore eventStore)
     {
-        _events = initialEvents?.ToList() ?? [];
+        _eventStore = eventStore;
     }
+
 
     /// <summary>
     /// Возвращает список мероприятий с учетом фильтрации и пагинации.
@@ -35,26 +36,29 @@ public class EventService : IEventService
     /// <exception cref="ValidationException">
     /// Выбрасывается, если параметры пагинации некорректны.
     /// </exception>
-    public PaginatedResult<Event> GetEvents(GetEventsQuery pageData)
+    public Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData)
     {
         ValidatePagination(pageData.Page, pageData.PageSize);
 
-        var filteredEvents = ApplyFilters(pageData.Title, pageData.From, pageData.To);
+        var filteredEvents = ApplyFilters(_eventStore.GetAll(), pageData.Title, pageData.From, pageData.To).ToList();
 
-        var totalItems = filteredEvents.Count();
+        var totalItems = filteredEvents.Count;
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageData.PageSize);
 
         var items = ApplyPaging(filteredEvents, pageData.Page, pageData.PageSize);
         var totalItemsOnPage = items.Count;
 
-        return new PaginatedResult<Event>(
+        var result = new PaginatedResult<Event>(
             items,
             pageData.Page,
             pageData.PageSize,
             totalPages,
             totalItems,
             totalItemsOnPage);
+
+        return Task.FromResult(result);
     }
+
 
     /// <summary>
     /// Возвращает мероприятие по идентификатору.
@@ -64,10 +68,11 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public Event GetEvent(Guid id)
+    public Task<Event> GetEvent(Guid id)
     {
-        return _events.FirstOrDefault(e => e.Id == id)
-               ?? throw new NotFoundException("Event", id);
+        var ev = _eventStore.Get(id);
+
+        return Task.FromResult(ev);
     }
 
     /// <summary>
@@ -75,17 +80,18 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="newEvent">Данные для создания мероприятия.</param>
     /// <returns>Созданное мероприятие.</returns>
-    public Event AddEvent(CreateEventModel newEvent)
+    public Task<Event> CreateEventAsync(CreateEventModel newEvent)
     {
         var createdEvent = Event.Create(
             newEvent.Title,
             newEvent.Description,
+            newEvent.TotalSeats,
             newEvent.StartAt,
             newEvent.EndAt);
 
-        _events.Add(createdEvent);
+        _eventStore.Add(createdEvent);
 
-        return createdEvent;
+        return Task.FromResult(createdEvent);
     }
 
     /// <summary>
@@ -97,9 +103,9 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public Event UpdateEvent(Guid id, UpdateEventModel updatedEvent)
+    public Task<Event> UpdateEvent(Guid id, UpdateEventModel updatedEvent)
     {
-        var existingEvent = GetEvent(id);
+        var existingEvent = _eventStore.Get(id);
 
         existingEvent.Update(
             updatedEvent.Title,
@@ -107,7 +113,7 @@ public class EventService : IEventService
             updatedEvent.StartAt,
             updatedEvent.EndAt);
 
-        return existingEvent;
+        return Task.FromResult(existingEvent);
     }
 
     /// <summary>
@@ -117,10 +123,10 @@ public class EventService : IEventService
     /// <exception cref="NotFoundException">
     /// Выбрасывается, если мероприятие не найдено.
     /// </exception>
-    public void RemoveEvent(Guid id)
+    public Task RemoveEvent(Guid id)
     {
-        var existingEvent = GetEvent(id);
-        _events.Remove(existingEvent);
+        _eventStore.Remove(id);
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -156,9 +162,9 @@ public class EventService : IEventService
     /// <param name="dateFrom">Нижняя граница даты начала.</param>
     /// <param name="dateTo">Верхняя граница даты окончания.</param>
     /// <returns>Отфильтрованная последовательность мероприятий.</returns>
-    private IEnumerable<Event> ApplyFilters(string? title, DateTime? dateFrom, DateTime? dateTo)
+    private IEnumerable<Event> ApplyFilters(IEnumerable<Event> events, string? title, DateTime? dateFrom, DateTime? dateTo)
     {
-        IEnumerable<Event> query = _events;
+        var query = events;
 
         if (!string.IsNullOrWhiteSpace(title))
         {

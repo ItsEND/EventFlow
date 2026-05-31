@@ -25,6 +25,8 @@ builder.Services.AddControllers()
 
 builder.Services.AddProblemDetails();
 
+builder.Services.AddSingleton<InMemoryEventStore>();
+
 builder.Services.AddSingleton<IEventService, EventService>();
 builder.Services.AddSingleton<IBookingService, BookingService>();
 builder.Services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();

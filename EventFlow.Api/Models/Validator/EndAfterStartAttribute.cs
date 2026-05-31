@@ -49,7 +49,7 @@ public class EndAfterStartAttribute : ValidationAttribute
             : startValue is not DateTime startAt
 
             ? new ValidationResult($"Свойство '{_startPropertyName}' должно быть DateTime.")
-            : endAt < startAt
+            : endAt <= startAt
 
             ? new ValidationResult(ErrorMessage ?? "Дата окончания должна быть позже даты начала.")
             : ValidationResult.Success;

@@ -16,6 +16,8 @@ namespace EventFlow.Api.Contracts
             Id = ev.Id,
             Title = ev.Title,
             Description = ev.Description,
+            TotalSeats = ev.TotalSeats,
+            AvailableSeats = ev.AvailableSeats,
             StartAt = ev.StartAt,
             EndAt = ev.EndAt
         };
