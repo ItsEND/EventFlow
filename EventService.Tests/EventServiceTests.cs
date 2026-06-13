@@ -32,8 +32,8 @@ public class EventServiceTests : IDisposable
 
         _scope = _provider.CreateScope();
 
-        _eventService =
-            _scope.ServiceProvider.GetRequiredService<IEventService>();
+        _eventService = _scope.ServiceProvider.GetRequiredService<IEventService>();
+        
     }
 
     public void Dispose()
@@ -54,13 +54,13 @@ public class EventServiceTests : IDisposable
             EndAt = new DateTime(2026, 6, 1, 20, 0, 0)
         };
 
-        var beforeCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+        var beforeCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
         // Act
         var created = await _eventService.CreateEventAsync(newEvent, CancellationToken.None);
 
         var after = await _eventService.GetEventAsync(created.Id, CancellationToken.None);
-        var afterCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+        var afterCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
         // Assert
         Assert.NotNull(created);
@@ -87,7 +87,7 @@ public class EventServiceTests : IDisposable
         };
 
         // Act
-        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedCount, result.TotalItems);
@@ -143,11 +143,11 @@ public class EventServiceTests : IDisposable
     {
         //Arrange
         var existingEvent = _seedEvents.First();
-        var beforeCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+        var beforeCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
         //Act
         await _eventService.RemoveEventAsync(existingEvent.Id, CancellationToken.None);
-        var afterCount = (await _eventService.GetEvents(new GetEventsQuery(), CancellationToken.None)).TotalItems;
+        var afterCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
         //Assert
         Assert.Equal(beforeCount - 1, afterCount);
@@ -164,7 +164,7 @@ public class EventServiceTests : IDisposable
         var pageData = new GetEventsQuery { Title = searchSubstring };
 
         //Act
-        var result = (await _eventService.GetEvents(pageData, CancellationToken.None)).Items;
+        var result = (await _eventService.GetEventsAsync(pageData, CancellationToken.None)).Items;
 
         //Assert
         Assert.All(result, ev => expectedResult.Contains(ev.Title));
@@ -183,7 +183,7 @@ public class EventServiceTests : IDisposable
         };
 
         //Act
-        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
         var titles = result.Items.Select(e => e.Title).ToList();
 
         //Assert
@@ -210,7 +210,7 @@ public class EventServiceTests : IDisposable
             .ToList();
 
         // Act
-        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
 
         // Assert
         Assert.Equal(2, result.CurrentPage);
@@ -233,7 +233,7 @@ public class EventServiceTests : IDisposable
         };
 
         //Act
-        var result = await _eventService.GetEvents(query, CancellationToken.None);
+        var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
         var titles = result.Items.Select(e => e.Title).ToList();
 
         //Assert

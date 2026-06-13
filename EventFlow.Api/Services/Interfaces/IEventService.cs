@@ -16,7 +16,7 @@ public interface IEventService
     /// </summary>
     /// <param name="pageData">Параметры фильтрации и пагинации.</param>
     /// <returns>Постраничный результат с мероприятиями.</returns>
-    Task<PaginatedResult<Event>> GetEvents(GetEventsQuery pageData, CancellationToken ct = default);
+    Task<PaginatedResult<Event>> GetEventsAsync(GetEventsQuery pageData, CancellationToken ct = default);
 
     /// <summary>
     /// Возвращает мероприятие по его идентификатору.

@@ -1,5 +1,7 @@
 using EventFlow.Api;
 using EventFlow.Api.DataAccess;
+using EventFlow.Api.Repositories;
+using EventFlow.Api.Repositories.Interfaces;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +38,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+
 builder.Services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
 builder.Services.AddHostedService<BookingProcessingBackgroundService>();
@@ -65,7 +70,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.EnsureCreatedAsync();
+    db.Database.Migrate();
 }
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
