@@ -11,7 +11,7 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Строка подключения DefaultConnection не найдена.");
+    ?? throw new InvalidOperationException("РЎС‚СЂРѕРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ DefaultConnection РЅРµ РЅР°Р№РґРµРЅР°.");
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -21,8 +21,8 @@ builder.Services.AddControllers()
             var problem = new ValidationProblemDetails(context.ModelState)
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "Некорректный запрос",
-                Detail = "Одна или несколько ошибок валидации",
+                Title = "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ Р·Р°РїСЂРѕСЃ",
+                Detail = "РћРґРЅР° РёР»Рё РЅРµСЃРєРѕР»СЊРєРѕ РѕС€РёР±РѕРє РІР°Р»РёРґР°С†РёРё",
                 Type = "https://httpstatuses.com/400",
                 Instance = context.HttpContext.Request.Path
             };
@@ -58,10 +58,10 @@ if (builder.Environment.IsDevelopment())
 
     builder.Host.UseDefaultServiceProvider(options =>
     {
-        // Проверяет Captive Dependency во время выполнения
+        // РџСЂРѕРІРµСЂСЏРµС‚ Captive Dependency РІРѕ РІСЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ
         options.ValidateScopes = true;
 
-        // Проверяет корректность всех регистраций при старте приложения
+        // РџСЂРѕРІРµСЂСЏРµС‚ РєРѕСЂСЂРµРєС‚РЅРѕСЃС‚СЊ РІСЃРµС… СЂРµРіРёСЃС‚СЂР°С†РёР№ РїСЂРё СЃС‚Р°СЂС‚Рµ РїСЂРёР»РѕР¶РµРЅРёСЏ
         options.ValidateOnBuild = true;
     });
 }
