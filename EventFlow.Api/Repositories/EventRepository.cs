@@ -53,8 +53,8 @@ public class EventRepository : IEventRepository
         _db.Events.Remove(ev);
     }
 
-    public Task AddAsync(Event ev, CancellationToken cancellationToken = default)
-        => _db.Events.AddAsync(ev, cancellationToken).AsTask();
+    public void Add(Event ev)
+        => _db.Events.Add(ev);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => _db.SaveChangesAsync(cancellationToken);

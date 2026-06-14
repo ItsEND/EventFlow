@@ -1,5 +1,4 @@
-﻿using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
+﻿using EventFlow.Api.Models;
 using EventFlow.Api.Repositories.Interfaces;
 using EventFlow.Api.Services.Interfaces;
 
@@ -58,7 +57,7 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
             {
                 booking = Booking.Create(eventId);
 
-                await bookingRepository.AddAsync(booking, ct);
+                bookingRepository.Add(booking);
                 await bookingRepository.SaveChangesAsync(ct);
             }
             catch (OperationCanceledException)

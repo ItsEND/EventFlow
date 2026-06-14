@@ -24,7 +24,7 @@ namespace EventApi.IntegrationTests
                 var repository = new BookingRepository(context);
 
                 // Act
-                await repository.AddAsync(booking, CancellationToken.None);
+                repository.Add(booking);
 
                 await repository.SaveChangesAsync(CancellationToken.None);
             }
@@ -40,6 +40,32 @@ namespace EventApi.IntegrationTests
             Assert.Equal(existingEvent.Id, saved.EventId);
             Assert.Equal(BookingStatus.Pending, saved.Status);
             Assert.Null(saved.ProcessedAt);
+        }
+
+        [Fact]
+        public async Task GetPendingIdsAsync_ShouldReturnOnlyPendingBookings()
+        {
+            // Arrange
+            var existingEvent = await SeedEventAsync();
+
+            var pendingBooking = Booking.Create(existingEvent.Id);
+
+            var confirmedBooking = Booking.Create(existingEvent.Id);
+            confirmedBooking.Confirm();
+
+            await SeedBookingAsync(pendingBooking);
+            await SeedBookingAsync(confirmedBooking);
+
+            await using var context = CreateContext();
+            var repository = new BookingRepository(context);
+
+            // Act
+            var result = await repository.GetPendingIdsAsync(CancellationToken.None);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(pendingBooking.Id, result);
+            Assert.DoesNotContain(confirmedBooking.Id, result);
         }
 
         [Fact]

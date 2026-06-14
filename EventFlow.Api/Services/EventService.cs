@@ -83,7 +83,7 @@ public class EventService : IEventService
             newEvent.StartAt,
             newEvent.EndAt);
 
-        await _eventRepository.AddAsync(createdEvent, ct);
+        _eventRepository.Add(createdEvent);
 
         await _eventRepository.SaveChangesAsync(ct);
         return createdEvent;

@@ -23,7 +23,7 @@ public class EventRepositoryTests : RepositoryTestBase
             var repository = new EventRepository(context);
 
             // Act
-            await repository.AddAsync(newEvent, CancellationToken.None);
+            repository.Add(newEvent);
 
             await repository.SaveChangesAsync(CancellationToken.None);
         }
