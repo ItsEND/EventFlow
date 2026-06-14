@@ -28,7 +28,7 @@ services:
     container_name: eventapi-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@eventapi.local
+      PGADMIN_DEFAULT_EMAIL: admin@eventflow.dev
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
