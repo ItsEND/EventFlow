@@ -1,7 +1,5 @@
-﻿using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
+﻿using EventFlow.Api.Repositories.Interfaces;
 using EventFlow.Api.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventFlow.Api.Services;
 
@@ -28,13 +26,11 @@ public class BookingProcessingBackgroundService(IServiceScopeFactory scopeFactor
             {
                 var pendingBookingIds = await GetPendingBookingIdsAsync(stoppingToken);
 
-                await Parallel.ForEachAsync(
-                    pendingBookingIds,
-                    new ParallelOptions
-                    {
-                        CancellationToken = stoppingToken,
-                        MaxDegreeOfParallelism = MaxDegreeOfParallelism
-                    },
+                await Parallel.ForEachAsync(pendingBookingIds, new ParallelOptions
+                {
+                    CancellationToken = stoppingToken,
+                    MaxDegreeOfParallelism = MaxDegreeOfParallelism
+                },
                     ProcessBookingAsync);
                 await Task.Delay(PollingDelayMs, stoppingToken);
             }
@@ -54,15 +50,12 @@ public class BookingProcessingBackgroundService(IServiceScopeFactory scopeFactor
     /// <summary>
     /// Обрабатывает одну бронь в отдельном scope.
     /// </summary>
-    private async Task<List<Guid>> GetPendingBookingIdsAsync(CancellationToken stopingToken)
+    private async Task<IReadOnlyList<Guid>> GetPendingBookingIdsAsync(CancellationToken stopingToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
 
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        return await context.Bookings
-            .Where(booking => booking.Status == BookingStatus.Pending)
-            .Select(booking => booking.Id)
-            .ToListAsync(stopingToken);
+        var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+        return await bookingRepository.GetPendingIdsAsync(stopingToken);
     }
 
     private async ValueTask ProcessBookingAsync(Guid bookingId, CancellationToken stoppingToken)

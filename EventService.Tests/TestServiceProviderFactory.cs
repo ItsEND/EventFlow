@@ -1,4 +1,6 @@
 ﻿using EventFlow.Api.DataAccess;
+using EventFlow.Api.Repositories;
+using EventFlow.Api.Repositories.Interfaces;
 using EventFlow.Api.Services;
 using EventFlow.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,8 @@ internal static class TestServiceProviderFactory
             options.UseInMemoryDatabase(dbName));
 
         services.AddScoped<IEventService, EventFlow.Api.Services.EventService>();
+        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IBookingService, BookingService>();
 
         return services.BuildServiceProvider(

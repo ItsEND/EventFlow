@@ -17,7 +17,7 @@ public class Booking
     /// <summary>
     /// Идентификатор мероприятия, к которому относится бронь.
     /// </summary>
-    public Event Event { get; private set; } = null!; 
+    public Event Event { get; private set; } = null!;
     public Guid EventId { get; init; }
 
     /// <summary>

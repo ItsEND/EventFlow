@@ -1,7 +1,8 @@
 # PostgreSQL для EventApi — совпадает с ConnectionStrings:DefaultConnection в appsettings.json
 # Запуск из корня репозитория: docker compose up -d
 # Остановка: docker compose down
-# Данные сохраняются в именованном томе eventapi_pgdata
+# Данные PostgreSQL сохраняются в именованном томе eventapi_pgdata
+# Данные pgAdmin сохраняются в именованном томе eventapi_pgadmin_data
 
 services:
   postgres:
@@ -22,5 +23,21 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eventapi-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@eventflow.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - eventapi_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   eventapi_pgdata:
+  eventapi_pgadmin_data:

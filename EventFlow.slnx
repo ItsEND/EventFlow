@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="EventApi.IntegrationTests/EventApi.IntegrationTests.csproj" Id="9cf9a49c-f207-4732-a7df-d4c6f3e789e0" />
   <Project Path="EventFlow.Api/EventFlow.Api.csproj" />
   <Project Path="EventService.Tests/EventService.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />
 </Solution>

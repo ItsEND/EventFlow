@@ -5,8 +5,8 @@ namespace EventFlow.Api.DataAccess;
 
 public sealed class AppDbContext : DbContext
 {
-    public DbSet<Event> Events  => Set<Event>();
-    public DbSet<Booking> Bookings => Set<Booking>();   
+    public DbSet<Event> Events => Set<Event>();
+    public DbSet<Booking> Bookings => Set<Booking>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

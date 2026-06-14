@@ -1,5 +1,5 @@
-﻿using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
+﻿using EventFlow.Api.Models;
+using EventFlow.Api.Repositories.Interfaces;
 using EventFlow.Api.Services.Interfaces;
 
 namespace EventFlow.Api.Services;
@@ -14,8 +14,8 @@ namespace EventFlow.Api.Services;
 /// </remarks>
 /// <param name="eventService">Сервис для получения информации о мероприятиях.</param>
 /// <param name="logger">Логгер сервиса бронирований.</param>
-/// <param name="context">Контекст базы данных приложения.</param>
-public class BookingService(IEventService eventService, ILogger<BookingService> logger, AppDbContext context) : IBookingService
+/// <param name="bookingRepository">Резпозиторий бронирования приложения.</param>
+public class BookingService(IEventService eventService, ILogger<BookingService> logger, IBookingRepository bookingRepository) : IBookingService
 {
     private static readonly SemaphoreSlim _bookingSemaphore = new(1, 1);
 
@@ -57,8 +57,8 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
             {
                 booking = Booking.Create(eventId);
 
-                context.Bookings.Add(booking);
-                await context.SaveChangesAsync(ct);
+                bookingRepository.Add(booking);
+                await bookingRepository.SaveChangesAsync(ct);
             }
             catch (OperationCanceledException)
             {
@@ -69,9 +69,7 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
             {
                 ev.ReleaseSeats();
 
-                throw new InvalidOperationException(
-                    "Не удалось создать бронирование.",
-                    ex);
+                throw new InvalidOperationException("Не удалось создать бронирование.", ex);
             }
             logger.LogInformation("Бронирование {BookingId} создано для события {EventId}. Доступных мест={AvailableSeats}",
                                    booking.Id,
@@ -101,7 +99,7 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
     {
         ct.ThrowIfCancellationRequested();
 
-        return await context.Bookings.FindAsync([bookingId], ct)
+        return await bookingRepository.GetByIdAsync(bookingId, ct)
             ?? throw new NotFoundException("Booking", bookingId);
     }
 
@@ -138,7 +136,7 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
         catch (NotFoundException)
         {
             booking.Reject();
-            await context.SaveChangesAsync(ct);
+            await bookingRepository.SaveChangesAsync(ct);
 
             logger.LogWarning("Бронирование {BookingId} отклонено, так как событие {EventId} не найдено.",
                                booking.Id,
@@ -148,7 +146,7 @@ public class BookingService(IEventService eventService, ILogger<BookingService> 
         }
 
         booking.Confirm();
-        await context.SaveChangesAsync(ct);
+        await bookingRepository.SaveChangesAsync(ct);
 
         logger.LogInformation("Бронирование {BookingId} для события {EventId} подтверждено.",
                                booking.Id,

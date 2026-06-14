@@ -31,7 +31,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpGet]
     public async Task<ActionResult<PaginatedResult<EventResponse>>> GetEvents([FromQuery] GetEventsQuery query)
     {
-        var paginatedEvents = _eventService.GetEvents(query);
+        var paginatedEvents = _eventService.GetEventsAsync(query);
         var result = PaginatedEventToResponse(await paginatedEvents);
 
         return Ok(result);
