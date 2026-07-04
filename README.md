@@ -40,6 +40,25 @@
 - Testcontainers for .NET;
 - Docker.
 
+## Архитектура слоев
+
+Проект разделен на четыре отдельные сборки по принципам чистой архитектуры:
+
+- `EventFlow.Domain` - доменные сущности, перечисления и доменные исключения.
+- `EventFlow.Application` - use cases, сервисы, DTO и абстракции портов.
+- `EventFlow.Infrastructure` - `DbContext`, EF Core конфигурации, миграции, репозитории и фоновые адаптеры.
+- `EventFlow.Api` - слой Presentation: контроллеры, HTTP-контракты, middleware и composition root.
+
+Направление зависимостей:
+
+- `Presentation -> Application`
+- `Presentation -> Infrastructure`
+- `Infrastructure -> Application`
+- `Infrastructure -> Domain`
+- `Application -> Domain`
+
+`Presentation` не знает о `Domain` напрямую. Для передачи ошибок наружу слой `Application` использует единое `AppException` с кодом ошибки, а слой `Presentation` отображает его в HTTP-статусы.
+
 ## Архитектура хранения данных
 
 События и бронирования сохраняются в PostgreSQL. Работа с базой данных выполняется через EF Core и репозитории:
@@ -213,7 +232,7 @@ dotnet tool install --global dotnet-ef --version 10.0.9
 
 ```bash
 dotnet ef migrations add <MigrationName> \
-  --project EventFlow.Api \
+  --project EventFlow.Infrastructure \
   --startup-project EventFlow.Api
 ```
 
@@ -221,7 +240,7 @@ dotnet ef migrations add <MigrationName> \
 
 ```bash
 dotnet ef migrations add AddBookingIndexes \
-  --project EventFlow.Api \
+  --project EventFlow.Infrastructure \
   --startup-project EventFlow.Api
 ```
 
@@ -229,7 +248,7 @@ dotnet ef migrations add AddBookingIndexes \
 
 ```bash
 dotnet ef database update \
-  --project EventFlow.Api \
+  --project EventFlow.Infrastructure \
   --startup-project EventFlow.Api
 ```
 

@@ -1,12 +1,12 @@
-﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Contracts;
 using EventFlow.Api.Contracts.Booking;
 using EventFlow.Api.Contracts.Events;
-using EventFlow.Api.Models;
-using EventFlow.Api.Services.Interfaces;
+using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Dtos;
+using EventFlow.Application.Dtos.Events;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventFlow.Api.Controllers;
-
 
 /// <summary>
 /// Контроллер для управления мероприятиями.
@@ -31,9 +31,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpGet]
     public async Task<ActionResult<PaginatedResult<EventResponse>>> GetEvents([FromQuery] GetEventsQuery query)
     {
-        var paginatedEvents = _eventService.GetEventsAsync(query);
-        var result = PaginatedEventToResponse(await paginatedEvents);
-
+        var result = PaginatedEventToResponse(await _eventService.GetEventsAsync(query));
         return Ok(result);
     }
 
@@ -45,8 +43,8 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<EventResponse>> GetEventById(Guid id)
     {
-        var ev = _eventService.GetEventAsync(id);
-        return Ok(DtoHelper.ToEventResponse(await ev));
+        var ev = await _eventService.GetEventAsync(id);
+        return Ok(DtoHelper.ToEventResponse(ev));
     }
 
     /// <summary>
@@ -57,7 +55,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpPost]
     public async Task<ActionResult<EventResponse>> CreateEvent([FromBody] EventRequest request)
     {
-        var created = _eventService.CreateEventAsync(new CreateEventModel
+        var created = await _eventService.CreateEventAsync(new CreateEventModel
         {
             Title = request.Title,
             Description = request.Description,
@@ -66,7 +64,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
             EndAt = request.EndAt
         });
 
-        var response = DtoHelper.ToEventResponse(await created);
+        var response = DtoHelper.ToEventResponse(created);
 
         return CreatedAtAction(nameof(GetEventById), new { id = response.Id }, response);
     }
@@ -80,7 +78,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
-        var updated = _eventService.UpdateEventAsync(id, new UpdateEventModel
+        var updated = await _eventService.UpdateEventAsync(id, new UpdateEventModel
         {
             Title = request.Title,
             Description = request.Description,
@@ -88,7 +86,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
             EndAt = request.EndAt
         });
 
-        return Ok(DtoHelper.ToEventResponse(await updated));
+        return Ok(DtoHelper.ToEventResponse(updated));
     }
 
     /// <summary>
@@ -116,7 +114,6 @@ public class EventController(IEventService _eventService, IBookingService _booki
     [HttpPost("{id:guid}/book")]
     public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {
-
         var booking = await _bookingService.CreateBookingAsync(id, ct);
         var response = DtoHelper.ToBookingResponse(booking);
 
@@ -129,7 +126,12 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// </summary>
     /// <param name="result">Постраничный результат доменной модели.</param>
     /// <returns>Постраничный результат DTO ответа.</returns>
-    private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<Event> result)
-        => new(result.Items.Select(DtoHelper.ToEventResponse),
-            result.CurrentPage, result.PageSize, result.TotalPages, result.TotalItems, result.TotalItemsOnPage);
+    private static PaginatedResult<EventResponse> PaginatedEventToResponse(PaginatedResult<EventDto> result)
+        => new(
+            result.Items.Select(DtoHelper.ToEventResponse),
+            result.CurrentPage,
+            result.PageSize,
+            result.TotalPages,
+            result.TotalItems,
+            result.TotalItemsOnPage);
 }

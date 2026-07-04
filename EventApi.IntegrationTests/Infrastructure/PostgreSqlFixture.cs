@@ -1,4 +1,4 @@
-﻿using EventFlow.Api.DataAccess;
+using EventFlow.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -9,7 +9,9 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     private const string TestDatabase = "eventflow_tests";
     private const string AdminDatabase = "postgres";
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine").WithDatabase(TestDatabase).Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
+        .WithDatabase(TestDatabase)
+        .Build();
 
     public async ValueTask InitializeAsync()
     {
@@ -24,11 +26,9 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public AppDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(_postgres.GetConnectionString(),
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.UseAdminDatabase(AdminDatabase);
-                })
+            .UseNpgsql(
+                _postgres.GetConnectionString(),
+                npgsqlOptions => { npgsqlOptions.UseAdminDatabase(AdminDatabase); })
             .Options;
 
         return new AppDbContext(options);
@@ -42,4 +42,3 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await context.Database.MigrateAsync(cancellationToken);
     }
 }
-

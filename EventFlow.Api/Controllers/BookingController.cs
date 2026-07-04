@@ -1,6 +1,6 @@
-﻿using EventFlow.Api.Contracts;
+using EventFlow.Api.Contracts;
 using EventFlow.Api.Contracts.Booking;
-using EventFlow.Api.Services.Interfaces;
+using EventFlow.Application.Abstractions.Services;
 using Microsoft.AspNetCore.Mvc;
 
 /// <summary>

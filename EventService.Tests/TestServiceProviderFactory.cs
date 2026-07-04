@@ -1,8 +1,8 @@
-﻿using EventFlow.Api.DataAccess;
-using EventFlow.Api.Repositories;
-using EventFlow.Api.Repositories.Interfaces;
-using EventFlow.Api.Services;
-using EventFlow.Api.Services.Interfaces;
+using EventFlow.Application.Abstractions.Repositories;
+using EventFlow.Application.Abstractions.Services;
+using EventFlow.Infrastructure.Background;
+using EventFlow.Infrastructure.DataAccess;
+using EventFlow.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,10 +25,11 @@ internal static class TestServiceProviderFactory
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase(dbName));
 
-        services.AddScoped<IEventService, EventFlow.Api.Services.EventService>();
+        services.AddScoped<IEventService, EventFlow.Application.Services.EventService>();
+        services.AddScoped<IBookingService, EventFlow.Application.Services.BookingService>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IBookingService, BookingService>();
+        services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
         return services.BuildServiceProvider(
             new ServiceProviderOptions

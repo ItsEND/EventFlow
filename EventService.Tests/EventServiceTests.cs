@@ -1,8 +1,9 @@
-﻿using EventFlow.Api;
-using EventFlow.Api.Contracts.Events;
-using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
-using EventFlow.Api.Services.Interfaces;
+using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Dtos;
+using EventFlow.Application.Dtos.Events;
+using EventFlow.Application.Exceptions;
+using EventFlow.Domain.Models;
+using EventFlow.Infrastructure.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 
@@ -23,17 +24,14 @@ public class EventServiceTests : IDisposable
 
         using (var seedScope = _provider.CreateScope())
         {
-            var context =
-                seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var context = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             context.Events.AddRange(_seedEvents);
             context.SaveChanges();
         }
 
         _scope = _provider.CreateScope();
-
         _eventService = _scope.ServiceProvider.GetRequiredService<IEventService>();
-        
     }
 
     public void Dispose()
@@ -41,10 +39,10 @@ public class EventServiceTests : IDisposable
         _scope.Dispose();
         _provider.Dispose();
     }
+
     [Fact]
     public async Task AddEvent_ShouldCreateEvent()
     {
-        // Arrange
         var newEvent = new CreateEventModel
         {
             Title = "Новый Митап",
@@ -56,13 +54,11 @@ public class EventServiceTests : IDisposable
 
         var beforeCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-        // Act
         var created = await _eventService.CreateEventAsync(newEvent, CancellationToken.None);
 
         var after = await _eventService.GetEventAsync(created.Id, CancellationToken.None);
         var afterCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-        // Assert
         Assert.NotNull(created);
         Assert.Equal(beforeCount + 1, afterCount);
 
@@ -77,7 +73,6 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task GetEvents_ReturnsAllEvents()
     {
-        // Arrange
         var expectedCount = _seedEvents.Count;
 
         var query = new GetEventsQuery
@@ -86,10 +81,8 @@ public class EventServiceTests : IDisposable
             PageSize = 50
         };
 
-        // Act
         var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
 
-        // Assert
         Assert.Equal(expectedCount, result.TotalItems);
         Assert.Equal(expectedCount, result.Items.Count());
     }
@@ -97,13 +90,9 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task GetEvent_ShouldReturnWhenIdExists()
     {
-        //Arrange
         var existingEvent = _seedEvents.First();
-
-        //Act
         var result = await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None);
 
-        //Assert
         Assert.NotNull(result);
         Assert.Equal(existingEvent.Id, result.Id);
         Assert.Equal(existingEvent.Title, result.Title);
@@ -115,7 +104,6 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task UpdateEvent_ShouldModifyExistingEvent()
     {
-        //Arrange
         var existingEvent = _seedEvents.First();
         var updateModel = new UpdateEventModel
         {
@@ -125,11 +113,9 @@ public class EventServiceTests : IDisposable
             EndAt = existingEvent.EndAt.AddHours(1)
         };
 
-        //Act
         var updated = await _eventService.UpdateEventAsync(existingEvent.Id, updateModel, CancellationToken.None);
         var afterUpdate = await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None);
 
-        //Assert
         Assert.NotNull(updated);
         Assert.Equal(existingEvent.Id, updated.Id);
         Assert.Equal(updateModel.Title, afterUpdate.Title);
@@ -139,34 +125,29 @@ public class EventServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RemoveEvent_ShouldDeleteExistingEvent()
+    public async Task RemoveEvent_ShouldThrowAppExceptionWithNotFoundCode_AfterDeletion()
     {
-        //Arrange
         var existingEvent = _seedEvents.First();
         var beforeCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-        //Act
         await _eventService.RemoveEventAsync(existingEvent.Id, CancellationToken.None);
         var afterCount = (await _eventService.GetEventsAsync(new GetEventsQuery(), CancellationToken.None)).TotalItems;
 
-        //Assert
         Assert.Equal(beforeCount - 1, afterCount);
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<AppException>(async () => await _eventService.GetEventAsync(existingEvent.Id, CancellationToken.None));
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
     public async Task FilterByTitle_ReturnsMatchingEvents()
     {
-        //Arrange
         var searchSubstring = ".NET";
         var expectedResult = new List<string> { "Конференция .NET Backend", "Митап по ASP.NET Core" };
         var notExpectedResult = new List<string> { "Митап C# Junior", "Воркшоп по LINQ", "Архитектура REST API" };
         var pageData = new GetEventsQuery { Title = searchSubstring };
 
-        //Act
         var result = (await _eventService.GetEventsAsync(pageData, CancellationToken.None)).Items;
 
-        //Assert
         Assert.All(result, ev => expectedResult.Contains(ev.Title));
         Assert.DoesNotContain(result.Select(ev => ev.Title), title => notExpectedResult.Contains(title));
     }
@@ -174,19 +155,15 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task GetEvents_ShouldFilterByDateRange()
     {
-        //Arrange
-
         var query = new GetEventsQuery
         {
             From = new DateTime(2026, 5, 1),
             To = new DateTime(2026, 5, 10, 23, 59, 59)
         };
 
-        //Act
         var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
         var titles = result.Items.Select(e => e.Title).ToList();
 
-        //Assert
         Assert.Equal(3, result.TotalItems);
         Assert.Contains("Docker для разработчиков", titles);
         Assert.Contains("Митап по ASP.NET Core", titles);
@@ -196,7 +173,6 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task GetEvents_ShouldReturnRequestedPage()
     {
-        // Arrange
         var query = new GetEventsQuery
         {
             Page = 2,
@@ -209,10 +185,8 @@ public class EventServiceTests : IDisposable
             .Take(5)
             .ToList();
 
-        // Act
         var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
 
-        // Assert
         Assert.Equal(2, result.CurrentPage);
         Assert.Equal(5, result.PageSize);
         Assert.Equal(12, result.TotalItems);
@@ -224,7 +198,6 @@ public class EventServiceTests : IDisposable
     [Fact]
     public async Task GetEvents_ShouldApplyCombinedFilters()
     {
-        //Arrange
         var query = new GetEventsQuery
         {
             Title = "Митап",
@@ -232,33 +205,27 @@ public class EventServiceTests : IDisposable
             To = new DateTime(2026, 5, 31, 23, 59, 59)
         };
 
-        //Act
         var result = await _eventService.GetEventsAsync(query, CancellationToken.None);
         var titles = result.Items.Select(e => e.Title).ToList();
 
-        //Assert
         Assert.Equal(2, result.TotalItems);
         Assert.Contains("Митап по ASP.NET Core", titles);
         Assert.Contains("Финальный митап спринта", titles);
     }
 
     [Fact]
-    public async Task GetEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+    public async Task GetEvent_ShouldThrowAppExceptionWithNotFoundCode_WhenIdDoesNotExist()
     {
-        //Arrange
         var nonExistentId = Guid.NewGuid();
-
-        //Act
         var action = async () => await _eventService.GetEventAsync(nonExistentId);
 
-        //Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
-    public async Task UpdateEvent_ShouldThrowNotFoundException_WhenIdDoesNotExist()
+    public async Task UpdateEvent_ShouldThrowAppExceptionWithNotFoundCode_WhenIdDoesNotExist()
     {
-        // Arrange
         var id = Guid.NewGuid();
 
         var updateModel = new UpdateEventModel
@@ -269,17 +236,15 @@ public class EventServiceTests : IDisposable
             EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
         };
 
-        // Act
         var action = async () => await _eventService.UpdateEventAsync(id, updateModel);
 
-        // Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
     public async Task AddEvent_ShouldThrowValidationException_WhenTitleIsInvalid()
     {
-        // Arrange
         var invalidEvent = new CreateEventModel
         {
             Title = "   ",
@@ -289,12 +254,11 @@ public class EventServiceTests : IDisposable
             EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
         };
 
-        // Act
         var action = async () => await _eventService.CreateEventAsync(invalidEvent, CancellationToken.None);
 
-        // Assert
         await Assert.ThrowsAsync<ValidationException>(action);
     }
+
     [Fact]
     public async Task AddEvent_ShouldThrowValidationException_WhenTotalSeatsIsNotPositive()
     {
@@ -310,10 +274,10 @@ public class EventServiceTests : IDisposable
         await Assert.ThrowsAsync<ValidationException>(() =>
             _eventService.CreateEventAsync(invalidEvent, CancellationToken.None));
     }
+
     [Fact]
     public async Task UpdateEvent_ShouldThrowValidationException_WhenEndAtEarlierThanStartAt()
     {
-        // Arrange
         var existingEvent = _seedEvents.First();
 
         var invalidUpdate = new UpdateEventModel
@@ -324,10 +288,8 @@ public class EventServiceTests : IDisposable
             EndAt = new DateTime(2026, 6, 10, 10, 0, 0)
         };
 
-        // Act
         var action = async () => await _eventService.UpdateEventAsync(existingEvent.Id, invalidUpdate, CancellationToken.None);
 
-        // Assert
         await Assert.ThrowsAsync<ValidationException>(action);
     }
 
@@ -335,7 +297,7 @@ public class EventServiceTests : IDisposable
     {
         return
         [
-        Event.Create(
+            Event.Create(
                 "Конференция .NET Backend",
                 "Практики построения Web API на ASP.NET Core",
                 10,
