@@ -1,7 +1,8 @@
-﻿using EventFlow.Api;
-using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
-using EventFlow.Api.Services.Interfaces;
+using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Dtos.Booking;
+using EventFlow.Application.Exceptions;
+using EventFlow.Domain.Models;
+using EventFlow.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,11 +25,8 @@ public class BookingServiceTests : IDisposable
 
         _scope = _provider.CreateScope();
 
-        _eventService =
-            _scope.ServiceProvider.GetRequiredService<IEventService>();
-
-        _bookingService =
-            _scope.ServiceProvider.GetRequiredService<IBookingService>();
+        _eventService = _scope.ServiceProvider.GetRequiredService<IEventService>();
+        _bookingService = _scope.ServiceProvider.GetRequiredService<IBookingService>();
     }
 
     public void Dispose()
@@ -40,16 +38,12 @@ public class BookingServiceTests : IDisposable
     [Fact]
     public async Task CreateBookingAsync_ShouldCreatePendingBooking_WhenEventExists()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
-
-        // Act
         var booking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
-        // Assert
         Assert.NotEqual(Guid.Empty, booking.Id);
         Assert.Equal(eventId, booking.EventId);
-        Assert.Equal(BookingStatus.Pending, booking.Status);
+        Assert.Equal(BookingStatus.Pending.ToString(), booking.Status);
         Assert.NotEqual(default, booking.CreatedAt);
         Assert.Null(booking.ProcessedAt);
     }
@@ -57,14 +51,11 @@ public class BookingServiceTests : IDisposable
     [Fact]
     public async Task CreateBookingAsync_ShouldCreateSeveralBookingsWithUniqueIds_WhenSameEventUsed()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
 
-        // Act
         var firstBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
         var secondBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
-        // Assert
         Assert.Equal(eventId, firstBooking.EventId);
         Assert.Equal(eventId, secondBooking.EventId);
 
@@ -72,21 +63,18 @@ public class BookingServiceTests : IDisposable
         Assert.NotEqual(Guid.Empty, secondBooking.Id);
         Assert.NotEqual(firstBooking.Id, secondBooking.Id);
 
-        Assert.Equal(BookingStatus.Pending, firstBooking.Status);
-        Assert.Equal(BookingStatus.Pending, secondBooking.Status);
+        Assert.Equal(BookingStatus.Pending.ToString(), firstBooking.Status);
+        Assert.Equal(BookingStatus.Pending.ToString(), secondBooking.Status);
     }
 
     [Fact]
     public async Task GetBookingByIdAsync_ShouldReturnBooking_WhenBookingExists()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
         var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
-        // Act
         var foundBooking = await _bookingService.GetBookingByIdAsync(createdBooking.Id, CancellationToken.None);
 
-        // Assert
         Assert.Equal(createdBooking.Id, foundBooking.Id);
         Assert.Equal(createdBooking.EventId, foundBooking.EventId);
         Assert.Equal(createdBooking.Status, foundBooking.Status);
@@ -97,92 +85,71 @@ public class BookingServiceTests : IDisposable
     [Fact]
     public async Task ProcessBookingAsync_ShouldChangeStatusToConfirmedAndSetProcessedAt()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
         var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
-        // Act
         var processedBooking = await _bookingService.ProcessBookingAsync(createdBooking.Id, CancellationToken.None);
 
-        // Assert
         Assert.Equal(createdBooking.Id, processedBooking.Id);
-        Assert.Equal(BookingStatus.Confirmed, processedBooking.Status);
+        Assert.Equal(BookingStatus.Confirmed.ToString(), processedBooking.Status);
         Assert.NotNull(processedBooking.ProcessedAt);
     }
 
     [Fact]
     public async Task GetBookingByIdAsync_ShouldReflectStatusChange_AfterProcessing()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
         var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
         await _bookingService.ProcessBookingAsync(createdBooking.Id, CancellationToken.None);
-
-        // Act
         var foundBooking = await _bookingService.GetBookingByIdAsync(createdBooking.Id, CancellationToken.None);
 
-        // Assert
-        Assert.Equal(BookingStatus.Confirmed, foundBooking.Status);
+        Assert.Equal(BookingStatus.Confirmed.ToString(), foundBooking.Status);
         Assert.NotNull(foundBooking.ProcessedAt);
     }
 
     [Fact]
-    public async Task CreateBookingAsync_ShouldThrowNotFoundException_WhenEventDoesNotExist()
+    public async Task CreateBookingAsync_ShouldThrowAppExceptionWithNotFoundCode_WhenEventDoesNotExist()
     {
-        // Arrange
         var nonExistingEventId = Guid.NewGuid();
+        var action = async () => await _bookingService.CreateBookingAsync(nonExistingEventId, CancellationToken.None);
 
-        // Act
-        var action = async () =>
-            await _bookingService.CreateBookingAsync(nonExistingEventId, CancellationToken.None);
-
-        // Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
-    public async Task CreateBookingAsync_ShouldThrowNotFoundException_WhenEventWasDeleted()
+    public async Task CreateBookingAsync_ShouldThrowAppExceptionWithNotFoundCode_WhenEventWasDeleted()
     {
-        // Arrange
         var eventId = _seedEvents.First().Id;
         await _eventService.RemoveEventAsync(eventId, CancellationToken.None);
 
-        // Act
-        var action = async () =>
-            await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var action = async () => await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
-        // Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
-    public async Task GetBookingByIdAsync_ShouldThrowNotFoundException_WhenBookingDoesNotExist()
+    public async Task GetBookingByIdAsync_ShouldThrowAppExceptionWithNotFoundCode_WhenBookingDoesNotExist()
     {
-        // Arrange
         var nonExistingBookingId = Guid.NewGuid();
+        var action = async () => await _bookingService.GetBookingByIdAsync(nonExistingBookingId, CancellationToken.None);
 
-        // Act
-        var action = async () =>
-            await _bookingService.GetBookingByIdAsync(nonExistingBookingId, CancellationToken.None);
-
-        // Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
 
     [Fact]
-    public async Task ProcessBookingAsync_ShouldThrowNotFoundException_WhenBookingDoesNotExist()
+    public async Task ProcessBookingAsync_ShouldThrowAppExceptionWithNotFoundCode_WhenBookingDoesNotExist()
     {
-        // Arrange
         var nonExistingBookingId = Guid.NewGuid();
+        var action = async () => await _bookingService.ProcessBookingAsync(nonExistingBookingId, CancellationToken.None);
 
-        // Act
-        var action = async () =>
-            await _bookingService.ProcessBookingAsync(nonExistingBookingId, CancellationToken.None);
-
-        // Assert
-        await Assert.ThrowsAsync<NotFoundException>(action);
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
     }
+
     [Fact]
     public async Task CreateBookingAsync_ShouldDecreaseAvailableSeatsByOne()
     {
@@ -190,9 +157,7 @@ public class BookingServiceTests : IDisposable
 
         var before = await GetAvailableSeatsAsync(eventId);
 
-        await _bookingService.CreateBookingAsync(
-            eventId,
-            CancellationToken.None);
+        await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
 
         var after = await GetAvailableSeatsAsync(eventId);
 
@@ -200,7 +165,7 @@ public class BookingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateBookingAsync_ShouldThrowNoAvailableSeatsException_WhenNoSeatsLeft()
+    public async Task CreateBookingAsync_ShouldThrowAppExceptionWithNoAvailableSeatsCode_WhenNoSeatsLeft()
     {
         var ev = Event.Create(
             "Small event",
@@ -211,14 +176,11 @@ public class BookingServiceTests : IDisposable
 
         AddEvent(ev);
 
-        await _bookingService.CreateBookingAsync(
-            ev.Id,
-            CancellationToken.None);
+        await _bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
 
-        await Assert.ThrowsAsync<NoAvailableSeatsException>(() =>
-            _bookingService.CreateBookingAsync(
-                ev.Id,
-                CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _bookingService.CreateBookingAsync(ev.Id, CancellationToken.None));
+        Assert.Equal(AppErrorCode.NoAvailableSeats, exception.Code);
 
         var availableSeats = await GetAvailableSeatsAsync(ev.Id);
 
@@ -243,56 +205,37 @@ public class BookingServiceTests : IDisposable
             .Select(_ => Task.Run(async () =>
             {
                 using var scope = _provider.CreateScope();
-
-                var bookingService =
-                    scope.ServiceProvider.GetRequiredService<IBookingService>();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
                 try
                 {
-                    var booking = await bookingService.CreateBookingAsync(
-                        ev.Id,
-                        CancellationToken.None);
-
-                    return (
-                        Success: true,
-                        Booking: booking,
-                        Exception: (Exception?)null);
+                    var booking = await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+                    return (Success: true, Booking: booking, Exception: (Exception?)null);
                 }
                 catch (Exception ex)
                 {
-                    return (
-                        Success: false,
-                        Booking: (Booking?)null,
-                        Exception: ex);
+                    return (Success: false, Booking: (BookingDto?)null, Exception: ex);
                 }
             }))
             .ToArray();
 
         var results = await Task.WhenAll(tasks);
 
-        var successful = results
-            .Where(result => result.Success)
-            .ToList();
-
-        var failed = results
-            .Where(result => !result.Success)
-            .ToList();
+        var successful = results.Where(result => result.Success).ToList();
+        var failed = results.Where(result => !result.Success).ToList();
 
         Assert.Equal(5, successful.Count);
         Assert.Equal(15, failed.Count);
 
-        Assert.All(
-            failed,
-            result =>
-                Assert.IsType<NoAvailableSeatsException>(
-                    result.Exception));
+        Assert.All(failed, result =>
+        {
+            var exception = Assert.IsType<AppException>(result.Exception);
+            Assert.Equal(AppErrorCode.NoAvailableSeats, exception.Code);
+        });
 
         Assert.Equal(
             successful.Count,
-            successful
-                .Select(result => result.Booking!.Id)
-                .Distinct()
-                .Count());
+            successful.Select(result => result.Booking!.Id).Distinct().Count());
 
         Assert.Equal(0, await GetAvailableSeatsAsync(ev.Id));
         Assert.Equal(5, await GetBookingCountAsync(ev.Id));
@@ -316,27 +259,16 @@ public class BookingServiceTests : IDisposable
             .Select(_ => Task.Run(async () =>
             {
                 using var scope = _provider.CreateScope();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
-                var bookingService =
-                    scope.ServiceProvider.GetRequiredService<IBookingService>();
-
-                return await bookingService.CreateBookingAsync(
-                    ev.Id,
-                    CancellationToken.None);
+                return await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
             }))
             .ToArray();
 
         var bookings = await Task.WhenAll(tasks);
 
         Assert.Equal(10, bookings.Length);
-
-        Assert.Equal(
-            10,
-            bookings
-                .Select(booking => booking.Id)
-                .Distinct()
-                .Count());
-
+        Assert.Equal(10, bookings.Select(booking => booking.Id).Distinct().Count());
         Assert.Equal(0, await GetAvailableSeatsAsync(ev.Id));
         Assert.Equal(10, await GetBookingCountAsync(ev.Id));
     }
@@ -380,12 +312,11 @@ public class BookingServiceTests : IDisposable
         Assert.True(ev.TryReserveSeats());
         Assert.Equal(0, ev.AvailableSeats);
     }
+
     private void AddEvents(IEnumerable<Event> events)
     {
         using var scope = _provider.CreateScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Events.AddRange(events);
         context.SaveChanges();
@@ -394,9 +325,7 @@ public class BookingServiceTests : IDisposable
     private void AddEvent(Event ev)
     {
         using var scope = _provider.CreateScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Events.Add(ev);
         context.SaveChanges();
@@ -405,9 +334,7 @@ public class BookingServiceTests : IDisposable
     private async Task<int> GetAvailableSeatsAsync(Guid eventId)
     {
         await using var scope = _provider.CreateAsyncScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         return await context.Events
             .AsNoTracking()
@@ -419,13 +346,11 @@ public class BookingServiceTests : IDisposable
     private async Task<int> GetBookingCountAsync(Guid eventId)
     {
         await using var scope = _provider.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        return await context.Bookings
-            .CountAsync(booking => booking.EventId == eventId);
+        return await context.Bookings.CountAsync(booking => booking.EventId == eventId);
     }
+
     private static List<Event> SeedEvents()
     {
         return

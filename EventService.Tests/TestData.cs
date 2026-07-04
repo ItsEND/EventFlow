@@ -1,5 +1,5 @@
-﻿using EventFlow.Api.DataAccess;
-using EventFlow.Api.Models;
+using EventFlow.Domain.Models;
+using EventFlow.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,9 +15,7 @@ internal static class TestData
         var events = CreateEvents();
 
         using var scope = provider.CreateScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Events.AddRange(events);
         context.SaveChanges();
@@ -31,9 +29,7 @@ internal static class TestData
     public static void AddEvent(IServiceProvider provider, Event ev)
     {
         using var scope = provider.CreateScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Events.Add(ev);
         context.SaveChanges();
@@ -42,14 +38,10 @@ internal static class TestData
     /// <summary>
     /// Возвращает актуальное количество свободных мест из базы.
     /// </summary>
-    public static async Task<int> GetAvailableSeatsAsync(
-        IServiceProvider provider,
-        Guid eventId)
+    public static async Task<int> GetAvailableSeatsAsync(IServiceProvider provider, Guid eventId)
     {
         await using var scope = provider.CreateAsyncScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         return await context.Events
             .AsNoTracking()
@@ -61,13 +53,10 @@ internal static class TestData
     /// <summary>
     /// Возвращает количество броней в базе.
     /// </summary>
-    public static async Task<int> GetBookingCountAsync(
-        IServiceProvider provider)
+    public static async Task<int> GetBookingCountAsync(IServiceProvider provider)
     {
         await using var scope = provider.CreateAsyncScope();
-
-        var context =
-            scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         return await context.Bookings.CountAsync();
     }

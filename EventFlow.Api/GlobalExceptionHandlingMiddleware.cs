@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using EventFlow.Application.Exceptions;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api;
@@ -49,17 +50,17 @@ public class GlobalExceptionHandlingMiddleware
     private async Task HandleException(HttpContext httpContext, Exception ex)
     {
         _logger.LogError(
-              ex,
-              "Unhandled exception. Method={Method}, Path={Path}, TraceId={TraceId}",
-              httpContext.Request.Method,
-              httpContext.Request.Path,
-              httpContext.TraceIdentifier
-              );
+            ex,
+            "Unhandled exception. Method={Method}, Path={Path}, TraceId={TraceId}",
+            httpContext.Request.Method,
+            httpContext.Request.Path,
+            httpContext.TraceIdentifier);
 
         if (httpContext.Response.HasStarted)
         {
             _logger.LogWarning(
-                "Cannot write error response because the response already started TraceId = {TraceId}", httpContext.TraceIdentifier);
+                "Cannot write error response because the response already started TraceId = {TraceId}",
+                httpContext.TraceIdentifier);
             return;
         }
 
@@ -90,10 +91,9 @@ public class GlobalExceptionHandlingMiddleware
         ex switch
         {
             ValidationException ve => (StatusCodes.Status400BadRequest, "Некорректный запрос", ve.Message),
-            NotFoundException nfe => (StatusCodes.Status404NotFound, "Ресурс не найден", nfe.Message),
-            NoAvailableSeatsException nase => (StatusCodes.Status409Conflict, "Конфликт", nase.Message),
-            _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка"),
-
+            AppException { Code: AppErrorCode.NotFound } appException => (StatusCodes.Status404NotFound, "Ресурс не найден", appException.Message),
+            AppException { Code: AppErrorCode.NoAvailableSeats } appException => (StatusCodes.Status409Conflict, "Конфликт", appException.Message),
+            _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка")
         };
 
     /// <summary>

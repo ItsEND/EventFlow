@@ -1,4 +1,4 @@
-﻿using EventFlow.Api.Models.Validator;
+using EventFlow.Application.Dtos.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Api.Contracts.Events;
