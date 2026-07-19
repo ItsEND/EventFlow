@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EventFlow.Application.Dtos.Users
+﻿namespace EventFlow.Application.Dtos.Users
 {
     public record class RegisterUserModel
     {
