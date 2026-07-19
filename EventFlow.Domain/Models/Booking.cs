@@ -21,6 +21,16 @@ public class Booking
     public Guid EventId { get; init; }
 
     /// <summary>
+    /// Пользователь, создавший бронь.
+    /// </summary>
+    public User User { get; private set; } = null!;
+
+    /// <summary>
+    /// Идентификатор пользователя.
+    /// </summary>
+    public Guid UserId { get; init; }
+
+    /// <summary>
     /// Текущий статус брони.
     /// </summary>
     public BookingStatus Status { get; private set; } = BookingStatus.Pending;
@@ -37,10 +47,11 @@ public class Booking
     public DateTime? ProcessedAt { get; private set; }
 
     private Booking() { } // Для EF Core
-    private Booking(Guid id, Guid eventId)
+    private Booking(Guid id, Guid eventId, Guid userId)
     {
         Id = id;
         EventId = eventId;
+        UserId = userId;
     }
 
     /// <summary>
@@ -51,11 +62,11 @@ public class Booking
     /// <exception cref="ValidationException">
     /// Выбрасывается, если передан пустой идентификатор мероприятия.
     /// </exception>
-    public static Booking Create(Guid eventId)
+    public static Booking Create(Guid eventId, Guid userId)
     {
         return eventId == Guid.Empty
             ? throw new ValidationException("Идентификатор мероприятия не может быть пустым.")
-            : new Booking(Guid.NewGuid(), eventId);
+            : new Booking(Guid.NewGuid(), eventId, userId);
     }
 
     /// <summary>

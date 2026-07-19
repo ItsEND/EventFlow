@@ -16,7 +16,7 @@ public class BookingServiceTests : IDisposable
     private readonly IEventService _eventService;
     private readonly IBookingService _bookingService;
     private readonly List<Event> _seedEvents;
-
+    private readonly Guid _userId = Guid.NewGuid();
     public BookingServiceTests()
     {
         _provider = TestServiceProviderFactory.Create();
@@ -40,10 +40,11 @@ public class BookingServiceTests : IDisposable
     public async Task CreateBookingAsync_ShouldCreatePendingBooking_WhenEventExists()
     {
         var eventId = _seedEvents.First().Id;
-        var booking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var booking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         Assert.NotEqual(Guid.Empty, booking.Id);
         Assert.Equal(eventId, booking.EventId);
+        Assert.Equal(_userId, booking.UserId);
         Assert.Equal(BookingStatus.Pending.ToString(), booking.Status);
         Assert.NotEqual(default, booking.CreatedAt);
         Assert.Null(booking.ProcessedAt);
@@ -54,8 +55,8 @@ public class BookingServiceTests : IDisposable
     {
         var eventId = _seedEvents.First().Id;
 
-        var firstBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
-        var secondBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var firstBooking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
+        var secondBooking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         Assert.Equal(eventId, firstBooking.EventId);
         Assert.Equal(eventId, secondBooking.EventId);
@@ -72,7 +73,7 @@ public class BookingServiceTests : IDisposable
     public async Task GetBookingByIdAsync_ShouldReturnBooking_WhenBookingExists()
     {
         var eventId = _seedEvents.First().Id;
-        var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var createdBooking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         var foundBooking = await _bookingService.GetBookingByIdAsync(createdBooking.Id, CancellationToken.None);
 
@@ -87,7 +88,7 @@ public class BookingServiceTests : IDisposable
     public async Task ProcessBookingAsync_ShouldChangeStatusToConfirmedAndSetProcessedAt()
     {
         var eventId = _seedEvents.First().Id;
-        var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var createdBooking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         var processedBooking = await _bookingService.ProcessBookingAsync(createdBooking.Id, CancellationToken.None);
 
@@ -100,7 +101,7 @@ public class BookingServiceTests : IDisposable
     public async Task GetBookingByIdAsync_ShouldReflectStatusChange_AfterProcessing()
     {
         var eventId = _seedEvents.First().Id;
-        var createdBooking = await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var createdBooking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         await _bookingService.ProcessBookingAsync(createdBooking.Id, CancellationToken.None);
         var foundBooking = await _bookingService.GetBookingByIdAsync(createdBooking.Id, CancellationToken.None);
@@ -113,7 +114,7 @@ public class BookingServiceTests : IDisposable
     public async Task CreateBookingAsync_ShouldThrowAppExceptionWithNotFoundCode_WhenEventDoesNotExist()
     {
         var nonExistingEventId = Guid.NewGuid();
-        var action = async () => await _bookingService.CreateBookingAsync(nonExistingEventId, CancellationToken.None);
+        var action = async () => await _bookingService.CreateBookingAsync(nonExistingEventId, _userId, CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<AppException>(action);
         Assert.Equal(AppErrorCode.NotFound, exception.Code);
@@ -125,7 +126,7 @@ public class BookingServiceTests : IDisposable
         var eventId = _seedEvents.First().Id;
         await _eventService.RemoveEventAsync(eventId, CancellationToken.None);
 
-        var action = async () => await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        var action = async () => await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<AppException>(action);
         Assert.Equal(AppErrorCode.NotFound, exception.Code);
@@ -158,7 +159,7 @@ public class BookingServiceTests : IDisposable
 
         var before = await GetAvailableSeatsAsync(eventId);
 
-        await _bookingService.CreateBookingAsync(eventId, CancellationToken.None);
+        await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
 
         var after = await GetAvailableSeatsAsync(eventId);
 
@@ -177,10 +178,10 @@ public class BookingServiceTests : IDisposable
 
         AddEvent(ev);
 
-        await _bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+        await _bookingService.CreateBookingAsync(ev.Id, _userId, CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _bookingService.CreateBookingAsync(ev.Id, CancellationToken.None));
+            _bookingService.CreateBookingAsync(ev.Id, _userId, CancellationToken.None));
         Assert.Equal(AppErrorCode.NoAvailableSeats, exception.Code);
 
         var availableSeats = await GetAvailableSeatsAsync(ev.Id);
@@ -210,7 +211,7 @@ public class BookingServiceTests : IDisposable
 
                 try
                 {
-                    var booking = await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+                    var booking = await bookingService.CreateBookingAsync(ev.Id, _userId, CancellationToken.None);
                     return (Success: true, Booking: booking, Exception: (Exception?)null);
                 }
                 catch (Exception ex)
@@ -262,7 +263,7 @@ public class BookingServiceTests : IDisposable
                 using var scope = _provider.CreateScope();
                 var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
-                return await bookingService.CreateBookingAsync(ev.Id, CancellationToken.None);
+                return await bookingService.CreateBookingAsync(ev.Id, _userId, CancellationToken.None);
             }))
             .ToArray();
 
@@ -278,7 +279,7 @@ public class BookingServiceTests : IDisposable
     public async Task Cancel_ShouldChangeBookingStatusToCancelled()
     {
         var eventId = Guid.NewGuid();
-        var booking = Booking.Create(eventId);
+        var booking = Booking.Create(eventId, _userId);
 
         booking.Cancel();
 
@@ -290,7 +291,7 @@ public class BookingServiceTests : IDisposable
     public async Task Cancel_ShouldThrowValidationException_WhenBookingAlreadyCancelled()
     {
         var eventId = Guid.NewGuid();
-        var booking = Booking.Create(eventId);
+        var booking = Booking.Create(eventId, _userId);
 
         booking.Cancel();
 
@@ -307,7 +308,7 @@ public class BookingServiceTests : IDisposable
             new DateTime(2026, 6, 1, 10, 0, 0),
             new DateTime(2026, 6, 1, 12, 0, 0));
 
-        var booking = Booking.Create(ev.Id);
+        var booking = Booking.Create(ev.Id, _userId);
 
         var reserved = ev.TryReserveSeats();
         booking.Reject();

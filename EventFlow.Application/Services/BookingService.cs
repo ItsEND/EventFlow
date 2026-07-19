@@ -17,7 +17,7 @@ public class BookingService(
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
 
-    public async Task<BookingDto> CreateBookingAsync(Guid eventId, CancellationToken ct)
+    public async Task<BookingDto> CreateBookingAsync(Guid eventId, Guid userId, CancellationToken ct)
     {
         try
         {
@@ -36,7 +36,7 @@ public class BookingService(
 
                 try
                 {
-                    booking = Booking.Create(eventId);
+                    booking = Booking.Create(eventId, userId);
 
                     bookingRepository.Add(booking);
                     await bookingRepository.SaveChangesAsync(ct);
@@ -124,6 +124,7 @@ public class BookingService(
     {
         Id = booking.Id,
         EventId = booking.EventId,
+        UserId = booking.UserId,
         Status = booking.Status.ToString(),
         CreatedAt = booking.CreatedAt,
         ProcessedAt = booking.ProcessedAt

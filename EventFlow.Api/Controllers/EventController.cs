@@ -4,8 +4,9 @@ using EventFlow.Api.Contracts.Events;
 using EventFlow.Application.Abstractions.Services;
 using EventFlow.Application.Dtos;
 using EventFlow.Application.Dtos.Events;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using System.Security.Claims;
 namespace EventFlow.Api.Controllers;
 
 /// <summary>
@@ -52,6 +53,9 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// </summary>
     /// <param name="request">Данные для создания мероприятия.</param>
     /// <returns>Мероприятие.</returns>
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [HttpPost]
     public async Task<ActionResult<EventResponse>> CreateEvent([FromBody] EventRequest request)
     {
@@ -75,6 +79,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="request">Новые данные мероприятия.</param>
     /// <returns>Обновленное мероприятие.</returns>
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
     {
@@ -94,6 +99,7 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <returns>Пустой ответ со статусом 204 No Content.</returns>
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -108,13 +114,21 @@ public class EventController(IEventService _eventService, IBookingService _booki
     /// <param name="id">Идентификатор мероприятия.</param>
     /// <param name="ct">Токен отмены запроса.</param>
     /// <returns>Созданная бронь в статусе Pending.</returns>
+    [Authorize]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [HttpPost("{id:guid}/book")]
     public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
     {
-        var booking = await _bookingService.CreateBookingAsync(id, ct);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var booking = await _bookingService.CreateBookingAsync(id, userId, ct);
         var response = DtoHelper.ToBookingResponse(booking);
 
         return Accepted($"/bookings/{booking.Id}", response);
