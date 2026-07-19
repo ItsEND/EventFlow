@@ -89,12 +89,12 @@ public class Booking
     /// </exception>
     public void Cancel()
     {
-        if (Status == BookingStatus.Canceled)
+        if (Status == BookingStatus.Cancelled)
         {
             throw new ValidationException("Бронь уже отменена");
         }
 
-        Status = BookingStatus.Canceled;
+        Status = BookingStatus.Cancelled;
         ProcessedAt = DateTime.UtcNow;
     }
 

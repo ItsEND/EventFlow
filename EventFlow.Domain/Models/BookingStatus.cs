@@ -23,5 +23,5 @@ public enum BookingStatus
     /// <summary>
     /// Бронь отменена пользователем или администратором.
     /// </summary>
-    Canceled
+    Cancelled
 }

@@ -23,7 +23,7 @@ public class User
         Role = role;
     }
 
-    public static User Create(string login, string passwordHash, UserRole role)
+    public static User Create(string login, string passwordHash, UserRole role = UserRole.User)
     {
         if (string.IsNullOrWhiteSpace(login))
         {

@@ -282,7 +282,7 @@ public class BookingServiceTests : IDisposable
 
         booking.Cancel();
 
-        Assert.Equal(BookingStatus.Canceled, booking.Status);
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
         Assert.NotNull(booking.ProcessedAt);
     }
 
