@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EventService.Tests;
 
-public class UserRepositoryTests
+public class UserRepositoryTests : IDisposable
 {
     private readonly ServiceProvider _provider;
 
@@ -21,6 +21,7 @@ public class UserRepositoryTests
     [Fact]
     public async Task Add_ShouldPersistUser()
     {
+        var ct = TestContext.Current.CancellationToken;
         var user = User.Create("new-user", "PASSWORD_HASH");
 
         await using (var scope = _provider.CreateAsyncScope())
@@ -28,14 +29,14 @@ public class UserRepositoryTests
             var repository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
             repository.Add(user);
-            await repository.SaveChangesAsync();
+            await repository.SaveChangesAsync(ct);
         }
 
         await using (var scope = _provider.CreateAsyncScope())
         {
             var repository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-            var savedUser = await repository.GetByLoginAsync("new-user");
+            var savedUser = await repository.GetByLoginAsync("new-user",ct);
 
             Assert.NotNull(savedUser);
             Assert.Equal(user.Id, savedUser.Id);
@@ -48,11 +49,12 @@ public class UserRepositoryTests
     [Fact]
     public async Task GetByLoginAsync_ShouldReturnNull_WhenUserDoesNotExist()
     {
+        var ct = TestContext.Current.CancellationToken;
         await using var scope = _provider.CreateAsyncScope();
 
         var repository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-        var user = await repository.GetByLoginAsync("missing-user");
+        var user = await repository.GetByLoginAsync("missing-user", ct);
 
         Assert.Null(user);
     }
