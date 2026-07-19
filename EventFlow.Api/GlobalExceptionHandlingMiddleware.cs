@@ -95,6 +95,7 @@ public class GlobalExceptionHandlingMiddleware
             AppException { Code: AppErrorCode.NoAvailableSeats } appException => (StatusCodes.Status409Conflict, "Конфликт", appException.Message),
             AppException { Code: AppErrorCode.EventAlreadyStarted } appException => (StatusCodes.Status400BadRequest,"Некорректный запрос", appException.Message),
             AppException { Code: AppErrorCode.BookingLimitExceeded } appException => (StatusCodes.Status409Conflict, "Конфликт", appException.Message),
+            AppException { Code: AppErrorCode.Forbidden } appException => (StatusCodes.Status403Forbidden, "Доступ запрещён", appException.Message),
             _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка")
         };
 
@@ -109,6 +110,7 @@ public class GlobalExceptionHandlingMiddleware
             StatusCodes.Status400BadRequest => "https://httpstatuses.com/400",
             StatusCodes.Status404NotFound => "https://httpstatuses.com/404",
             StatusCodes.Status409Conflict => "https://httpstatuses.com/409",
+            StatusCodes.Status403Forbidden => "https://httpstatuses.com/403",
             _ => "https://httpstatuses.com/500"
         };
 }

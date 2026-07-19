@@ -414,6 +414,70 @@ public class BookingServiceTests : IDisposable
         return await context.Bookings.CountAsync(booking => booking.EventId == eventId);
     }
 
+    [Fact]
+    public async Task CancelBookingAsync_ShouldCancelOwnBooking()
+    {
+        var eventId = _seedEvents.First().Id;
+
+        var booking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
+
+        await _bookingService.CancelBookingAsync(booking.Id, _userId, isAdmin: false, CancellationToken.None);
+
+        var cancelledBooking =
+            await _bookingService.GetBookingByIdAsync(booking.Id, CancellationToken.None);
+
+        Assert.Equal(BookingStatus.Cancelled.ToString(), cancelledBooking.Status);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ShouldReleaseEventSeat()
+    {
+        var eventId = _seedEvents.First().Id;
+
+        var seatsBefore = await GetAvailableSeatsAsync(eventId);
+
+        var booking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
+
+        await _bookingService.CancelBookingAsync(booking.Id, _userId, isAdmin: false, CancellationToken.None);
+
+        var seatsAfter = await GetAvailableSeatsAsync(eventId);
+
+        Assert.Equal(seatsBefore, seatsAfter);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ShouldForbidCancellingAnotherUsersBooking()
+    {
+        var eventId = _seedEvents.First().Id;
+
+        var booking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
+
+        var anotherUserId = Guid.NewGuid();
+
+        var exception = await Assert.ThrowsAsync<AppException>(
+            () => _bookingService.CancelBookingAsync(
+                booking.Id,
+                anotherUserId,
+                isAdmin: false,
+                CancellationToken.None));
+
+        Assert.Equal(AppErrorCode.Forbidden, exception.Code);
+    }
+    [Fact]
+    public async Task CancelBookingAsync_ShouldAllowAdminToCancelAnyBooking()
+    {
+        var eventId = _seedEvents.First().Id;
+
+        var booking = await _bookingService.CreateBookingAsync(eventId, _userId, CancellationToken.None);
+
+        var adminUserId = Guid.NewGuid();
+
+        await _bookingService.CancelBookingAsync(booking.Id, adminUserId, isAdmin: true, CancellationToken.None);
+
+        var cancelledBooking = await _bookingService.GetBookingByIdAsync(booking.Id, CancellationToken.None);
+
+        Assert.Equal(BookingStatus.Cancelled.ToString(), cancelledBooking.Status);
+    }
     private static List<Event> SeedEvents()
     {
         return

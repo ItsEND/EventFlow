@@ -32,4 +32,9 @@ public interface IBookingService
     /// <param name="ct">Токен отмены операции.</param>
     /// <returns>Обработанная бронь.</returns>
     Task<BookingDto> ProcessBookingAsync(Guid bookingId, CancellationToken ct);
+
+    /// <summary>
+    /// Отменяет бронь с проверкой прав текущего пользователя.
+    /// </summary>
+    Task CancelBookingAsync(Guid bookingId, Guid currentUserId, bool isAdmin, CancellationToken cancellationToken);
 }

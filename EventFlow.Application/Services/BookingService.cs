@@ -152,4 +152,36 @@ public class BookingService(
         CreatedAt = booking.CreatedAt,
         ProcessedAt = booking.ProcessedAt
     };
+
+    public async Task CancelBookingAsync(Guid bookingId, Guid currentUserId, bool isAdmin, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var booking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken)
+                ?? throw new NotFoundException("Booking", bookingId);
+            if (!isAdmin && booking.UserId != currentUserId)
+            {
+                throw new ForbiddenOperationException("Пользователь может отменить только свою бронь");
+            }
+
+            var ev = await eventRepository.GetByIdAsync(booking.EventId, cancellationToken)
+                ?? throw new NotFoundException("Event", booking.EventId);
+
+            booking.Cancel();
+
+            ev.ReleaseSeats();
+
+            await bookingRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (NotFoundException ex)
+        {
+            throw AppException.NotFound(ex.Message, ex);
+        }
+        catch (ForbiddenOperationException ex)
+        {
+            throw AppException.Forbidden(ex.Message, ex);
+        }
+    }
 }

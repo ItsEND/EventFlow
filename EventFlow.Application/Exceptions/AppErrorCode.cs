@@ -8,5 +8,6 @@ public enum AppErrorCode
     NotFound,
     NoAvailableSeats,
     EventAlreadyStarted,
-    BookingLimitExceeded
+    BookingLimitExceeded,
+    Forbidden
 }

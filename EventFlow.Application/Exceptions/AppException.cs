@@ -28,4 +28,8 @@ public sealed class AppException : Exception
     {
         return new AppException(AppErrorCode.BookingLimitExceeded, message, innerException);
     }
+    public static AppException Forbidden(string message, Exception? innerException = null)
+    {
+        return new AppException(AppErrorCode.Forbidden, message, innerException);
+    }
 }
