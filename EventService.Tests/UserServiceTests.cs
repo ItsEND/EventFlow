@@ -1,6 +1,7 @@
 ﻿using EventFlow.Application.Abstractions.Repositories;
 using EventFlow.Application.Abstractions.Security;
 using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Exceptions;
 using EventFlow.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
@@ -40,7 +41,7 @@ public class UserServiceTests : IDisposable
 
         Assert.NotNull(user);
         Assert.NotEqual("secret123", user.PasswordHash);
-        Assert.True(passwordHasher.Verify("secret123",user.PasswordHash));
+        Assert.True(passwordHasher.Verify("secret123", user.PasswordHash));
         Assert.Equal(UserRole.User, user.Role);
     }
 
@@ -77,5 +78,59 @@ public class UserServiceTests : IDisposable
         var action = () => userService.RegisterAsync("alex", "second-password", ct: ct);
 
         await Assert.ThrowsAsync<ValidationException>(action);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ShouldReturnToken_WhenCredentialsAreCorrect()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        await using var scope = _provider.CreateAsyncScope();
+
+        var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+        await userService.RegisterAsync("alex", "secret123", ct: ct);
+
+        var token = await userService.LoginAsync("alex", "secret123", ct);
+
+        Assert.False(string.IsNullOrWhiteSpace(token));
+        Assert.Equal(3, token.Split('.').Length);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ShouldThrowNotFound_WhenPasswordIsIncorrect()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        await using var scope = _provider.CreateAsyncScope();
+
+        var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+        await userService.RegisterAsync("alex", "correct-password", ct: ct);
+
+        var action = () => userService.LoginAsync("alex", "incorrect-password", ct);
+
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
+
+        Assert.Equal("Неверный логин или пароль.", exception.Message);
+    }
+    [Fact]
+    public async Task LoginAsync_ShouldThrowNotFound_WhenLoginDoesNotExist()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        await using var scope = _provider.CreateAsyncScope();
+
+        var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+        var action = () => userService.LoginAsync("missing-user", "some-password", ct);
+
+        var exception = await Assert.ThrowsAsync<AppException>(action);
+
+        Assert.Equal(AppErrorCode.NotFound, exception.Code);
+
+        Assert.Equal("Неверный логин или пароль.", exception.Message);
     }
 }

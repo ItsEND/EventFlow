@@ -1,13 +1,16 @@
 ﻿using EventFlow.Application.Abstractions.Repositories;
 using EventFlow.Application.Abstractions.Security;
 using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Exceptions;
 using EventFlow.Domain.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Application.Services;
 
-public class UserService(IUserRepository userRepository, IPasswordHasher passwordHasher) : IUserService
+public class UserService(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtTokenGenerator jwtTokenGenerator) : IUserService
 {
+
+
     public async Task RegisterAsync(string login, string password, UserRole role = UserRole.User, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(login))
@@ -32,5 +35,21 @@ public class UserService(IUserRepository userRepository, IPasswordHasher passwor
 
         userRepository.Add(user);
         await userRepository.SaveChangesAsync(ct);
+    }
+
+    public async Task<string> LoginAsync(string login, string password, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
+        {
+            throw AppException.NotFound("Неверный логин или пароль");
+        }
+
+        var user = await userRepository.GetByLoginAsync(login, ct);
+        if (user is null || !passwordHasher.Verify(password, user.PasswordHash))
+        {
+            throw AppException.NotFound("Неверный логин или пароль.");
+        }
+
+        return jwtTokenGenerator.Generate(user);
     }
 }
