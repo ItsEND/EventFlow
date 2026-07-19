@@ -10,7 +10,7 @@ public class User
     public UserRole Role { get; private set; }
     public ICollection<Booking> Bookings { get; private set; } = [];
 
-    public User()
+    private User()
     {
         //Для Ef Core
     }
@@ -34,7 +34,7 @@ public class User
             throw new ValidationException("Пароль пользователя не может быть пустым");
         }
 
-        return new User(Guid.NewGuid(), login, passwordHash, role);
+        return new User(Guid.NewGuid(), login.Trim(), passwordHash, role);
     }
 
 

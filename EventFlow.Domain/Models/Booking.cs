@@ -80,6 +80,24 @@ public class Booking
         Complete(BookingStatus.Rejected);
     }
 
+
+    /// <summary>
+    /// Отменяет бронь.
+    /// </summary>
+    /// <exception cref="ValidationException">
+    /// Выбрасывается, если бронь уже была отменена.
+    /// </exception>
+    public void Cancel()
+    {
+        if (Status == BookingStatus.Canceled)
+        {
+            throw new ValidationException("Бронь уже отменена");
+        }
+
+        Status = BookingStatus.Canceled;
+        ProcessedAt = DateTime.UtcNow;
+    }
+
     private void Complete(BookingStatus targetStatus)
     {
         if (Status != BookingStatus.Pending)

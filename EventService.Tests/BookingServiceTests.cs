@@ -5,6 +5,7 @@ using EventFlow.Domain.Models;
 using EventFlow.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel.DataAnnotations;
 
 namespace EventService.Tests;
 
@@ -271,6 +272,29 @@ public class BookingServiceTests : IDisposable
         Assert.Equal(10, bookings.Select(booking => booking.Id).Distinct().Count());
         Assert.Equal(0, await GetAvailableSeatsAsync(ev.Id));
         Assert.Equal(10, await GetBookingCountAsync(ev.Id));
+    }
+
+    [Fact]
+    public async Task Cancel_ShouldChangeBookingStatusToCancelled()
+    {
+        var eventId = Guid.NewGuid();
+        var booking = Booking.Create(eventId);
+
+        booking.Cancel();
+
+        Assert.Equal(BookingStatus.Canceled, booking.Status);
+        Assert.NotNull(booking.ProcessedAt);
+    }
+
+    [Fact]
+    public async Task Cancel_ShouldThrowValidationException_WhenBookingAlreadyCancelled()
+    {
+        var eventId = Guid.NewGuid();
+        var booking = Booking.Create(eventId);
+
+        booking.Cancel();
+
+        Assert.Throws<ValidationException>(() => booking.Cancel());
     }
 
     [Fact]
