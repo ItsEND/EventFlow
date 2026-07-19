@@ -15,9 +15,9 @@ public class PasswordHasher : IPasswordHasher
         }
 
         var passwordBytes = Encoding.UTF8.GetBytes(password);
-        var hasBytes = SHA256.HashData(passwordBytes);
+        var hashBytes = SHA256.HashData(passwordBytes);
 
-        return Convert.ToHexString(hasBytes);
+        return Convert.ToHexString(hashBytes);
     }
 
     public bool Verify(string password, string passwordHash)

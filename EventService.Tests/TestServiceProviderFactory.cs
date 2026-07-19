@@ -29,6 +29,7 @@ internal static class TestServiceProviderFactory
         services.AddScoped<IBookingService, EventFlow.Application.Services.BookingService>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
 
         return services.BuildServiceProvider(
