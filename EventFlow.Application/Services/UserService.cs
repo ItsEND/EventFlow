@@ -15,11 +15,16 @@ public class UserService(IUserRepository userRepository, IPasswordHasher passwor
             throw new ValidationException("Логин не может быть пустым.");
         }
 
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            throw new ValidationException("Пароль не может быть пустым.");
+        }
+
         var existingUser = await userRepository.GetByLoginAsync(login, ct);
 
         if (existingUser is not null)
         {
-            throw new ValidationException("Пользователь с таким логином не существует");
+            throw new ValidationException("Пользователь с таким логином уже существует.");
         }
 
         var passwordHash = passwordHasher.Hash(password);
