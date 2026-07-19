@@ -1,6 +1,7 @@
 ﻿using EventFlow.Application.Abstractions.Repositories;
 using EventFlow.Application.Abstractions.Security;
 using EventFlow.Application.Abstractions.Services;
+using EventFlow.Application.Dtos.Users;
 using EventFlow.Application.Exceptions;
 using EventFlow.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +36,7 @@ public class UserServiceTests : IDisposable
 
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
-        await userService.RegisterAsync("alex", "secret123", ct: ct);
+        await userService.RegisterAsync(Registration("alex", "secret123"), ct);
 
         var user = await userRepository.GetByLoginAsync("alex", ct);
 
@@ -55,9 +56,8 @@ public class UserServiceTests : IDisposable
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-
-        await userService.RegisterAsync("admin", "admin-password", UserRole.Admin, ct);
-
+        
+        await userService.RegisterAsync(Registration("admin", "admin-password", "Admin"), ct);
         var user = await userRepository.GetByLoginAsync("admin", ct);
 
         Assert.NotNull(user);
@@ -73,9 +73,9 @@ public class UserServiceTests : IDisposable
 
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
-        await userService.RegisterAsync("alex", "first-password", ct: ct);
+        await userService.RegisterAsync(Registration("alex", "first-password"), ct);
 
-        var action = () => userService.RegisterAsync("alex", "second-password", ct: ct);
+        var action = () => userService.RegisterAsync(Registration("alex", "second-password"), ct);
 
         await Assert.ThrowsAsync<ValidationException>(action);
     }
@@ -89,7 +89,7 @@ public class UserServiceTests : IDisposable
 
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
-        await userService.RegisterAsync("alex", "secret123", ct: ct);
+        await userService.RegisterAsync(Registration("alex", "secret123"), ct);
 
         var token = await userService.LoginAsync("alex", "secret123", ct);
 
@@ -106,7 +106,7 @@ public class UserServiceTests : IDisposable
 
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
-        await userService.RegisterAsync("alex", "correct-password", ct: ct);
+        await userService.RegisterAsync(Registration("alex", "correct-password"), ct);
 
         var action = () => userService.LoginAsync("alex", "incorrect-password", ct);
 
@@ -132,5 +132,15 @@ public class UserServiceTests : IDisposable
         Assert.Equal(AppErrorCode.NotFound, exception.Code);
 
         Assert.Equal("Неверный логин или пароль.", exception.Message);
+    }
+
+    private static RegisterUserModel Registration(string login, string password, string? role = null)
+    {
+        return new RegisterUserModel
+        {
+            Login = login,
+            Password = password,
+            Role = role
+        };
     }
 }

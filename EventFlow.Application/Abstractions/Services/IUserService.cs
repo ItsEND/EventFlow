@@ -1,10 +1,10 @@
-﻿using EventFlow.Domain.Models;
+﻿using EventFlow.Application.Dtos.Users;
 
 namespace EventFlow.Application.Abstractions.Services;
 
 public interface IUserService
 {
-    Task RegisterAsync(string login, string password, UserRole role = UserRole.User, CancellationToken ct = default);
+    Task RegisterAsync(RegisterUserModel model, CancellationToken ct = default);
 
     Task<string> LoginAsync(string login, string password, CancellationToken ct = default);
 
