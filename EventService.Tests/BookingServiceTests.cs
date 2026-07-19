@@ -173,8 +173,8 @@ public class BookingServiceTests : IDisposable
             "Small event",
             null,
             1,
-            new DateTime(2026, 6, 1, 10, 0, 0),
-            new DateTime(2026, 6, 1, 12, 0, 0));
+            new DateTime(2030, 6, 1, 10, 0, 0),
+            new DateTime(2030, 6, 1, 12, 0, 0));
 
         AddEvent(ev);
 
@@ -196,8 +196,8 @@ public class BookingServiceTests : IDisposable
             "Limited event",
             null,
             5,
-            new DateTime(2026, 6, 1, 10, 0, 0),
-            new DateTime(2026, 6, 1, 12, 0, 0));
+            new DateTime(2030, 6, 1, 10, 0, 0),
+            new DateTime(2030, 6, 1, 12, 0, 0));
 
         AddEvent(ev);
 
@@ -250,8 +250,8 @@ public class BookingServiceTests : IDisposable
             "Concurrent event",
             null,
             10,
-            new DateTime(2026, 6, 1, 10, 0, 0),
-            new DateTime(2026, 6, 1, 12, 0, 0));
+            new DateTime(2030, 6, 1, 10, 0, 0),
+            new DateTime(2030, 6, 1, 12, 0, 0));
 
         AddEvent(ev);
 
@@ -305,8 +305,8 @@ public class BookingServiceTests : IDisposable
             "Event",
             null,
             1,
-            new DateTime(2026, 6, 1, 10, 0, 0),
-            new DateTime(2026, 6, 1, 12, 0, 0));
+            new DateTime(2030, 6, 1, 10, 0, 0),
+            new DateTime(2030, 6, 1, 12, 0, 0));
 
         var booking = Booking.Create(ev.Id, _userId);
 
@@ -336,6 +336,44 @@ public class BookingServiceTests : IDisposable
 
         Assert.True(ev.TryReserveSeats());
         Assert.Equal(0, ev.AvailableSeats);
+    }
+    [Fact]
+    public async Task CreateBookingAsync_ShouldFail_WhenEventAlreadyStarted()
+    {
+        var pastEvent = Event.Create("Past event", null, 10, DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddHours(-1));
+
+        AddEvent(pastEvent);
+
+        var exception = await Assert.ThrowsAsync<AppException>(
+            () => _bookingService.CreateBookingAsync(
+                pastEvent.Id,
+                _userId,
+                CancellationToken.None));
+
+        Assert.Equal(AppErrorCode.EventAlreadyStarted, exception.Code);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_ShouldFail_WhenUserHasTenActiveBookings()
+    {
+        var ev = Event.Create("Large event", null, 20, DateTime.UtcNow.AddDays(10), DateTime.UtcNow.AddDays(11));
+
+        AddEvent(ev);
+
+        for (var index = 0; index < 10; index++)
+        {
+            await _bookingService.CreateBookingAsync(ev.Id, _userId, CancellationToken.None);
+        }
+
+        var exception = await Assert.ThrowsAsync<AppException>(
+            () => _bookingService.CreateBookingAsync(
+                ev.Id,
+                _userId,
+                CancellationToken.None));
+
+        Assert.Equal(AppErrorCode.BookingLimitExceeded, exception.Code);
+
+        Assert.Contains("10", exception.Message);
     }
 
     private void AddEvents(IEnumerable<Event> events)
@@ -384,15 +422,15 @@ public class BookingServiceTests : IDisposable
                 "Конференция .NET Backend",
                 "Практики построения Web API на ASP.NET Core",
                 10,
-                new DateTime(2026, 4, 15, 10, 0, 0),
-                new DateTime(2026, 4, 15, 18, 0, 0)),
+                new DateTime(2030, 4, 15, 10, 0, 0),
+                new DateTime(2030, 4, 15, 18, 0, 0)),
 
             Event.Create(
                 "Митап C# Junior",
                 "Разбор базовых возможностей языка C#",
                 10,
-                new DateTime(2026, 4, 16, 18, 30, 0),
-                new DateTime(2026, 4, 16, 20, 30, 0))
+                new DateTime(2030, 4, 16, 18, 30, 0),
+                new DateTime(2030, 4, 16, 20, 30, 0))
         ];
     }
 }

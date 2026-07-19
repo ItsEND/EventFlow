@@ -18,4 +18,14 @@ public sealed class AppException : Exception
 
     public static AppException NoAvailableSeats(string message, Exception? innerException = null)
         => new(AppErrorCode.NoAvailableSeats, message, innerException);
+
+    public static AppException EventAlreadyStarted(string message, Exception? innerException = null)
+    {
+        return new AppException(AppErrorCode.EventAlreadyStarted, message, innerException);
+    }
+
+    public static AppException BookingLimitExceeded(string message, Exception? innerException = null)
+    {
+        return new AppException(AppErrorCode.BookingLimitExceeded, message, innerException);
+    }
 }

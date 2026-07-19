@@ -16,6 +16,7 @@ public class BookingService(
     IBookingTaskQueue bookingTaskQueue) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
+    private const int MaxActiveBookingsPerUser = 10;
 
     public async Task<BookingDto> CreateBookingAsync(Guid eventId, Guid userId, CancellationToken ct)
     {
@@ -31,6 +32,20 @@ public class BookingService(
             {
                 ev = await eventRepository.GetByIdAsync(eventId, ct)
                     ?? throw new NotFoundException("Event", eventId);
+
+                if (ev.StartAt <= DateTime.UtcNow)
+                {
+                    throw new EventAlreadyStartedException("Нельзя забронировать событие, которое уже началось.");
+                }
+
+                var activeBookingsCount = await bookingRepository.CountActiveByUserIdAsync(userId, ct);
+
+                if (activeBookingsCount >= MaxActiveBookingsPerUser)
+                {
+                    throw new BookingLimitExceededException(
+                        $"Пользователь не может иметь больше " +
+                        $"{MaxActiveBookingsPerUser} активных бронирований.");
+                }
 
                 ev.ReserveSeats();
 
@@ -67,6 +82,14 @@ public class BookingService(
         catch (NoAvailableSeatsException ex)
         {
             throw AppException.NoAvailableSeats(ex.Message, ex);
+        }
+        catch (EventAlreadyStartedException ex)
+        {
+            throw AppException.EventAlreadyStarted(ex.Message, ex);
+        }
+        catch (BookingLimitExceededException ex)
+        {
+            throw AppException.BookingLimitExceeded(ex.Message, ex);
         }
     }
 

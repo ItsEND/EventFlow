@@ -12,6 +12,14 @@ public class BookingRepository(AppDbContext db) : IBookingRepository
         db.Bookings.Add(booking);
     }
 
+    public Task<int> CountActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return db.Bookings
+        .CountAsync(booking => booking.UserId == userId && 
+        (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.Confirmed),
+        cancellationToken);
+    }
+
     public Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => db.Bookings.FirstOrDefaultAsync(book => book.Id == id, cancellationToken);
 

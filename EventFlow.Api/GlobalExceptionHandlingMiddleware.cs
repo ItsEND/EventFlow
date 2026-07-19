@@ -93,6 +93,8 @@ public class GlobalExceptionHandlingMiddleware
             ValidationException ve => (StatusCodes.Status400BadRequest, "Некорректный запрос", ve.Message),
             AppException { Code: AppErrorCode.NotFound } appException => (StatusCodes.Status404NotFound, "Ресурс не найден", appException.Message),
             AppException { Code: AppErrorCode.NoAvailableSeats } appException => (StatusCodes.Status409Conflict, "Конфликт", appException.Message),
+            AppException { Code: AppErrorCode.EventAlreadyStarted } appException => (StatusCodes.Status400BadRequest,"Некорректный запрос", appException.Message),
+            AppException { Code: AppErrorCode.BookingLimitExceeded } appException => (StatusCodes.Status409Conflict, "Конфликт", appException.Message),
             _ => (StatusCodes.Status500InternalServerError, "Внутренняя ошибка сервера", "Произошла непредвиденная ошибка")
         };
 
