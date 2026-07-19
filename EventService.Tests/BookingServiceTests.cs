@@ -352,7 +352,28 @@ public class BookingServiceTests : IDisposable
 
         Assert.Equal(AppErrorCode.EventAlreadyStarted, exception.Code);
     }
+    [Fact]
+    public async Task CreateBookingAsync_ShouldUseSeparateLimitsForDifferentUsers()
+    {
+        var ev = Event.Create("Event with separate user limits", null, 20, DateTime.UtcNow.AddDays(10), DateTime.UtcNow.AddDays(11));
 
+        AddEvent(ev);
+
+        var firstUserId = Guid.NewGuid();
+        var secondUserId = Guid.NewGuid();
+
+        for (var index = 0; index < 10; index++)
+        {
+            await _bookingService.CreateBookingAsync(ev.Id, firstUserId, CancellationToken.None);
+        }
+
+        await Assert.ThrowsAsync<AppException>(() => _bookingService.CreateBookingAsync(ev.Id, firstUserId, CancellationToken.None));
+
+        var secondUserBooking = await _bookingService.CreateBookingAsync(ev.Id, secondUserId, CancellationToken.None);
+
+        Assert.Equal(secondUserId, secondUserBooking.UserId);
+        Assert.Equal(BookingStatus.Pending.ToString(), secondUserBooking.Status);
+    }
     [Fact]
     public async Task CreateBookingAsync_ShouldFail_WhenUserHasTenActiveBookings()
     {
