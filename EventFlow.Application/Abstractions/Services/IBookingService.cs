@@ -14,7 +14,7 @@ public interface IBookingService
     /// <param name="eventId">Идентификатор мероприятия.</param>
     /// <param name="ct">Токен отмены операции.</param>
     /// <returns>Созданная бронь.</returns>
-    Task<BookingDto> CreateBookingAsync(Guid eventId, CancellationToken ct);
+    Task<BookingDto> CreateBookingAsync(Guid eventId, Guid userId, CancellationToken ct);
 
     /// <summary>
     /// Возвращает бронь по её идентификатору.
@@ -32,4 +32,9 @@ public interface IBookingService
     /// <param name="ct">Токен отмены операции.</param>
     /// <returns>Обработанная бронь.</returns>
     Task<BookingDto> ProcessBookingAsync(Guid bookingId, CancellationToken ct);
+
+    /// <summary>
+    /// Отменяет бронь с проверкой прав текущего пользователя.
+    /// </summary>
+    Task CancelBookingAsync(Guid bookingId, Guid currentUserId, bool isAdmin, CancellationToken cancellationToken);
 }

@@ -22,9 +22,17 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.CreatedAt)
             .IsRequired();
 
+        builder.Property(booking => booking.UserId)
+            .IsRequired();
+
         builder.HasOne(b => b.Event)
             .WithMany(e => e.Bookings)
             .HasForeignKey(b => b.EventId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(booking => booking.User)
+            .WithMany(user => user.Bookings)
+            .HasForeignKey(booking => booking.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

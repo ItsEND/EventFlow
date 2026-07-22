@@ -13,15 +13,16 @@ public class DatabaseMigrationTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task Migrations_ShouldCreateEventsAndBookingsTables()
+    public async Task Migrations_ShouldCreateEventsBookingsAndUsersTables()
     {
         await using var context = CreateContext();
 
         var eventsTableExists = await TableExistsAsync(context, "event");
         var bookingsTableExists = await TableExistsAsync(context, "booking");
-
+        var usersTableExists = await TableExistsAsync(context, "user");
         Assert.True(eventsTableExists);
         Assert.True(bookingsTableExists);
+        Assert.True(usersTableExists);
     }
 
     [Fact]
@@ -29,7 +30,13 @@ public class DatabaseMigrationTests : RepositoryTestBase
     {
         await using var context = CreateContext();
 
-        var booking = Booking.Create(Guid.NewGuid());
+        var user = User.Create("foreign-key-user", "PASSWORD_HASH");
+
+        context.Users.Add(user);
+
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        var booking = Booking.Create(Guid.NewGuid(), user.Id);
 
         context.Bookings.Add(booking);
 
@@ -41,10 +48,13 @@ public class DatabaseMigrationTests : RepositoryTestBase
     public async Task Migrations_ShouldCascadeDeleteBookings_WhenEventIsDeleted()
     {
         var existingEvent = Event.Create("Cascade delete test", description: null, totalSeats: 10, startAt: Utc(2026, 6, 1, 10), endAt: Utc(2026, 6, 1, 12));
-        var booking = Booking.Create(existingEvent.Id);
+        var user = User.Create("cascade-user", "PASSWORD_HASH");
+
+        var booking = Booking.Create(existingEvent.Id, user.Id);
 
         await using (var context = CreateContext())
         {
+            context.Users.Add(user);
             context.Events.Add(existingEvent);
             context.Bookings.Add(booking);
 

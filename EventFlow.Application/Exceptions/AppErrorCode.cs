@@ -6,5 +6,8 @@ namespace EventFlow.Application.Exceptions;
 public enum AppErrorCode
 {
     NotFound,
-    NoAvailableSeats
+    NoAvailableSeats,
+    EventAlreadyStarted,
+    BookingLimitExceeded,
+    Forbidden
 }

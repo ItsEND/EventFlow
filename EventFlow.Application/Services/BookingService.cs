@@ -16,8 +16,9 @@ public class BookingService(
     IBookingTaskQueue bookingTaskQueue) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
+    private const int MaxActiveBookingsPerUser = 10;
 
-    public async Task<BookingDto> CreateBookingAsync(Guid eventId, CancellationToken ct)
+    public async Task<BookingDto> CreateBookingAsync(Guid eventId, Guid userId, CancellationToken ct)
     {
         try
         {
@@ -32,11 +33,25 @@ public class BookingService(
                 ev = await eventRepository.GetByIdAsync(eventId, ct)
                     ?? throw new NotFoundException("Event", eventId);
 
+                if (ev.StartAt <= DateTime.UtcNow)
+                {
+                    throw new EventAlreadyStartedException("Нельзя забронировать событие, которое уже началось.");
+                }
+
+                var activeBookingsCount = await bookingRepository.CountActiveByUserIdAsync(userId, ct);
+
+                if (activeBookingsCount >= MaxActiveBookingsPerUser)
+                {
+                    throw new BookingLimitExceededException(
+                        $"Пользователь не может иметь больше " +
+                        $"{MaxActiveBookingsPerUser} активных бронирований.");
+                }
+
                 ev.ReserveSeats();
 
                 try
                 {
-                    booking = Booking.Create(eventId);
+                    booking = Booking.Create(eventId, userId);
 
                     bookingRepository.Add(booking);
                     await bookingRepository.SaveChangesAsync(ct);
@@ -67,6 +82,14 @@ public class BookingService(
         catch (NoAvailableSeatsException ex)
         {
             throw AppException.NoAvailableSeats(ex.Message, ex);
+        }
+        catch (EventAlreadyStartedException ex)
+        {
+            throw AppException.EventAlreadyStarted(ex.Message, ex);
+        }
+        catch (BookingLimitExceededException ex)
+        {
+            throw AppException.BookingLimitExceeded(ex.Message, ex);
         }
     }
 
@@ -124,8 +147,41 @@ public class BookingService(
     {
         Id = booking.Id,
         EventId = booking.EventId,
+        UserId = booking.UserId,
         Status = booking.Status.ToString(),
         CreatedAt = booking.CreatedAt,
         ProcessedAt = booking.ProcessedAt
     };
+
+    public async Task CancelBookingAsync(Guid bookingId, Guid currentUserId, bool isAdmin, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var booking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken)
+                ?? throw new NotFoundException("Booking", bookingId);
+            if (!isAdmin && booking.UserId != currentUserId)
+            {
+                throw new ForbiddenOperationException("Пользователь может отменить только свою бронь");
+            }
+
+            var ev = await eventRepository.GetByIdAsync(booking.EventId, cancellationToken)
+                ?? throw new NotFoundException("Event", booking.EventId);
+
+            booking.Cancel();
+
+            ev.ReleaseSeats();
+
+            await bookingRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (NotFoundException ex)
+        {
+            throw AppException.NotFound(ex.Message, ex);
+        }
+        catch (ForbiddenOperationException ex)
+        {
+            throw AppException.Forbidden(ex.Message, ex);
+        }
+    }
 }

@@ -16,7 +16,8 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
     public async Task AddAsync_AndSaveChangesAsync_ShouldPersistBooking()
     {
         var existingEvent = await SeedEventAsync();
-        var booking = Booking.Create(existingEvent.Id);
+        var existingUser = await SeedUserAsync();
+        var booking = Booking.Create(existingEvent.Id, existingUser.Id);
 
         await using (var context = CreateContext())
         {
@@ -33,6 +34,7 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
         Assert.NotNull(saved);
         Assert.Equal(booking.Id, saved.Id);
         Assert.Equal(existingEvent.Id, saved.EventId);
+        Assert.Equal(existingUser.Id, saved.UserId);
         Assert.Equal(BookingStatus.Pending, saved.Status);
         Assert.Null(saved.ProcessedAt);
     }
@@ -41,9 +43,10 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
     public async Task GetPendingIdsAsync_ShouldReturnOnlyPendingBookings()
     {
         var existingEvent = await SeedEventAsync();
+        var existingUser = await SeedUserAsync();
 
-        var pendingBooking = Booking.Create(existingEvent.Id);
-        var confirmedBooking = Booking.Create(existingEvent.Id);
+        var pendingBooking = Booking.Create(existingEvent.Id, existingUser.Id);
+        var confirmedBooking = Booking.Create(existingEvent.Id, existingUser.Id);
         confirmedBooking.Confirm();
 
         await SeedBookingAsync(pendingBooking);
@@ -63,7 +66,8 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
     public async Task GetByIdAsync_ShouldReturnBooking_WhenBookingExists()
     {
         var existingEvent = await SeedEventAsync();
-        var booking = Booking.Create(existingEvent.Id);
+        var existingUser = await SeedUserAsync();
+        var booking = Booking.Create(existingEvent.Id, existingUser.Id);
 
         await SeedBookingAsync(booking);
 
@@ -93,7 +97,8 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
     public async Task SaveChangesAsync_ShouldPersistBookingStatusChange()
     {
         var existingEvent = await SeedEventAsync();
-        var booking = Booking.Create(existingEvent.Id);
+        var existingUser = await SeedUserAsync();
+        var booking = Booking.Create(existingEvent.Id, existingUser.Id);
 
         await SeedBookingAsync(booking);
 
@@ -116,6 +121,19 @@ public sealed class BookingRepositoryTests : RepositoryTestBase
 
         Assert.Equal(BookingStatus.Confirmed, saved.Status);
         Assert.NotNull(saved.ProcessedAt);
+    }
+
+    private async Task<User> SeedUserAsync()
+    {
+        var user = User.Create($"user-{Guid.NewGuid():N}", "PASSWORD_HASH");
+
+        await using var context = CreateContext();
+
+        context.Users.Add(user);
+        await context.SaveChangesAsync(
+            CancellationToken.None);
+
+        return user;
     }
 
     private async Task<Event> SeedEventAsync()

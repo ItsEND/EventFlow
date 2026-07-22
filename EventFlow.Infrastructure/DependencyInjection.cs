@@ -1,8 +1,10 @@
 using EventFlow.Application.Abstractions.Repositories;
+using EventFlow.Application.Abstractions.Security;
 using EventFlow.Application.Abstractions.Services;
 using EventFlow.Infrastructure.Background;
 using EventFlow.Infrastructure.DataAccess;
 using EventFlow.Infrastructure.Repositories;
+using EventFlow.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +24,15 @@ public static class DependencyInjection
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
         services.AddHostedService<BookingProcessingBackgroundService>();
 

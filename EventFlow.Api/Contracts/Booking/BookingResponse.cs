@@ -16,6 +16,11 @@ public record class BookingResponse
     public required Guid EventId { get; init; }
 
     /// <summary>
+    /// Идентификатор владельца брони.
+    /// </summary>
+    public required Guid UserId { get; init; }
+
+    /// <summary>
     /// Текущий статус брони.
     /// </summary>
     public required string Status { get; init; }
