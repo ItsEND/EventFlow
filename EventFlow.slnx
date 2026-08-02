@@ -1,10 +1,25 @@
 <Solution>
   <Folder Name="/Services/" />
+  <Folder Name="/Services/Bookings/">
+    <Project Path="src/Services/Bookings/EventFlow.Bookings.Api/EventFlow.Bookings.Api.csproj" Id="362ad17b-1974-462b-aeb4-a3ce8a3b26fe" />
+    <Project Path="src/Services/Bookings/EventFlow.Bookings.Application/EventFlow.Bookings.Application.csproj" Id="58ce11e8-b25a-4e67-8ec7-87b6ea7534b7" />
+    <Project Path="src/Services/Bookings/EventFlow.Bookings.Domain/EventFlow.Bookings.Domain.csproj" Id="63588e8a-eaa8-4e05-b821-023170568a69" />
+    <Project Path="src/Services/Bookings/EventFlow.Bookings.Infrastructure/EventFlow.Bookings.Infrastructure.csproj" Id="f666f7d9-3d99-4bcf-a6aa-c074abbc2972" />
+  </Folder>
   <Folder Name="/Services/Events/">
     <Project Path="src/Services/Events/EventFlow.Events.Api/EventFlow.Events.Api.csproj" />
     <Project Path="src/Services/Events/EventFlow.Events.Application/EventFlow.Events.Application.csproj" />
     <Project Path="src/Services/Events/EventFlow.Events.Domain/EventFlow.Events.Domain.csproj" />
     <Project Path="src/Services/Events/EventFlow.Events.Infrastructure/EventFlow.Events.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Services/Users/">
+    <Project Path="src/Services/Users/EventFlow.Users.Api/EventFlow.Users.Api.csproj" Id="32e2955e-2569-4412-918e-a6af7d636d7b" />
+    <Project Path="src/Services/Users/EventFlow.Users.Application/EventFlow.Users.Application.csproj" Id="a367b275-938b-4798-bf99-4125dc202017" />
+    <Project Path="src/Services/Users/EventFlow.Users.Domain/EventFlow.Users.Domain.csproj" Id="a4dc44e1-3220-4b2c-baf3-aaa72579b5ba" />
+    <Project Path="src/Services/Users/EventFlow.Users.Infrastructure/EventFlow.Users.Infrastructure.csproj" Id="31cea7fd-22e1-45be-8f0e-244467facb8a" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="src/Shared/EventFlow.Contracts/EventFlow.Contracts.csproj" Id="682d864c-d412-404d-a220-a8c4d626a4ac" />
   </Folder>
   <Project Path="EventApi.IntegrationTests/EventApi.IntegrationTests.csproj" Id="9cf9a49c-f207-4732-a7df-d4c6f3e789e0" />
   <Project Path="EventService.Tests/EventService.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />

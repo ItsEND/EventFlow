@@ -1,11 +1,10 @@
-using EventFlow.Events.Domain.Models;
+using EventFlow.Bookings.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventFlow.Events.Infrastructure.DataAccess;
+namespace EventFlow.Bookings.Infrastructure.DataAccess;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<Event> Events => Set<Event>();
     public DbSet<Booking> Bookings => Set<Booking>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
