@@ -11,7 +11,7 @@ public abstract class RepositoryTestBase : IAsyncLifetime
 
     protected PostgreSqlFixture Fixture { get; }
 
-    protected AppDbContext CreateContext()
+    protected EventDbContext CreateContext()
     {
         return Fixture.CreateContext();
     }

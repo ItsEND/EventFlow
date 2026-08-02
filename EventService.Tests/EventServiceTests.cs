@@ -24,7 +24,7 @@ public class EventServiceTests : IDisposable
 
         using (var seedScope = _provider.CreateScope())
         {
-            var context = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var context = seedScope.ServiceProvider.GetRequiredService<EventDbContext>();
 
             context.Events.AddRange(_seedEvents);
             context.SaveChanges();

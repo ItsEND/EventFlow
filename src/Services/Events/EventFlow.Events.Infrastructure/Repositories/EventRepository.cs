@@ -1,12 +1,12 @@
 using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Application.Abstractions.Repositories;
-using EventFlow.Events.Application.Dtos.Events;
+using EventFlow.Events.Application.Contracts.Events;
 using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventFlow.Events.Infrastructure.Repositories;
 
-public class EventRepository(AppDbContext db) : IEventRepository
+public class EventRepository(EventDbContext db) : IEventRepository
 {
     public Task<Event?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => db.Events.FirstOrDefaultAsync(ev => ev.Id == id, cancellationToken);

@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace EventFlow.Infrastructure.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(EventDbContext))]
     [Migration("20260719134251_AddUsersAndBookingUser")]
     partial class AddUsersAndBookingUser
     {

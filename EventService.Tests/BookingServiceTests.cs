@@ -400,7 +400,7 @@ public class BookingServiceTests : IDisposable
     private void AddEvents(IEnumerable<Event> events)
     {
         using var scope = _provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         context.Events.AddRange(events);
         context.SaveChanges();
@@ -409,7 +409,7 @@ public class BookingServiceTests : IDisposable
     private void AddEvent(Event ev)
     {
         using var scope = _provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         context.Events.Add(ev);
         context.SaveChanges();
@@ -418,7 +418,7 @@ public class BookingServiceTests : IDisposable
     private async Task<int> GetAvailableSeatsAsync(Guid eventId)
     {
         await using var scope = _provider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         return await context.Events
             .AsNoTracking()
@@ -430,7 +430,7 @@ public class BookingServiceTests : IDisposable
     private async Task<int> GetBookingCountAsync(Guid eventId)
     {
         await using var scope = _provider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         return await context.Bookings.CountAsync(booking => booking.EventId == eventId);
     }

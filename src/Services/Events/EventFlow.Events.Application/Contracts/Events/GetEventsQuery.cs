@@ -1,7 +1,7 @@
-using EventFlow.Events.Application.Dtos.Validation;
+using EventFlow.Events.Application.Contracts.Validation;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventFlow.Events.Application.Dtos.Events;
+namespace EventFlow.Events.Application.Contracts.Events;
 
 /// <summary>
 /// Параметры запроса для получения списка мероприятий

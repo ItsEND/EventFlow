@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventFlow.Bookings.Infrastructure.Repositories;
 
-public class BookingRepository(AppDbContext db) : IBookingRepository
+public class BookingRepository(BookingDbContext db) : IBookingRepository
 {
     public void Add(Booking booking)
     {

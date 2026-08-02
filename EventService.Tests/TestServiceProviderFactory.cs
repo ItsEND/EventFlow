@@ -26,7 +26,7 @@ internal static class TestServiceProviderFactory
 
         services.AddLogging();
 
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddDbContext<EventDbContext>(options =>
             options.UseInMemoryDatabase(dbName));
 
         services.AddScoped<IEventRepository, EventRepository>();

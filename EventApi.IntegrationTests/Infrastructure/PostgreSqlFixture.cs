@@ -23,15 +23,15 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await _postgres.DisposeAsync();
     }
 
-    public AppDbContext CreateContext()
+    public EventDbContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        var options = new DbContextOptionsBuilder<EventDbContext>()
             .UseNpgsql(
                 _postgres.GetConnectionString(),
                 npgsqlOptions => { npgsqlOptions.UseAdminDatabase(AdminDatabase); })
             .Options;
 
-        return new AppDbContext(options);
+        return new EventDbContext(options);
     }
 
     public async Task ResetDatabaseAsync(CancellationToken cancellationToken = default)

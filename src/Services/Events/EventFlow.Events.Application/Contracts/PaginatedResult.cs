@@ -1,4 +1,4 @@
-namespace EventFlow.Events.Application.Dtos;
+namespace EventFlow.Events.Application.Contracts;
 
 /// <summary>
 /// Представляет постраничный результат выборки данных.

@@ -1,4 +1,4 @@
-namespace EventFlow.Events.Application.Dtos.Events;
+namespace EventFlow.Events.Application.Contracts.Events;
 
 /// <summary>
 /// DTO мероприятия, которое Application отдает внешним слоям.

@@ -78,7 +78,7 @@ public class DatabaseMigrationTests : RepositoryTestBase
         }
     }
 
-    private static async Task<bool> TableExistsAsync(AppDbContext context, string tableName)
+    private static async Task<bool> TableExistsAsync(EventDbContext context, string tableName)
     {
         await context.Database.OpenConnectionAsync(CancellationToken.None);
 

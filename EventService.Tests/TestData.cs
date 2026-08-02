@@ -15,7 +15,7 @@ internal static class TestData
         var events = CreateEvents();
 
         using var scope = provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         context.Events.AddRange(events);
         context.SaveChanges();
@@ -29,7 +29,7 @@ internal static class TestData
     public static void AddEvent(IServiceProvider provider, Event ev)
     {
         using var scope = provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         context.Events.Add(ev);
         context.SaveChanges();
@@ -41,7 +41,7 @@ internal static class TestData
     public static async Task<int> GetAvailableSeatsAsync(IServiceProvider provider, Guid eventId)
     {
         await using var scope = provider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         return await context.Events
             .AsNoTracking()
@@ -56,7 +56,7 @@ internal static class TestData
     public static async Task<int> GetBookingCountAsync(IServiceProvider provider)
     {
         await using var scope = provider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<EventDbContext>();
 
         return await context.Bookings.CountAsync();
     }

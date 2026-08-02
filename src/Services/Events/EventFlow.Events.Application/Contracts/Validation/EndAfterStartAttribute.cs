@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
-namespace EventFlow.Events.Application.Dtos.Validation;
+namespace EventFlow.Events.Application.Contracts.Validation;
 
 /// <summary>
 /// Проверяет, что значение конечной даты больше значения начальной даты.

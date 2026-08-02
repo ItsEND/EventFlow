@@ -17,7 +17,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("BookingConnection")
             ?? throw new InvalidOperationException("Connection string 'BookingConnection' was not found.");
 
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(connectionString));
 
 
@@ -33,7 +33,7 @@ public static class DependencyInjection
     public static async Task ApplyMigrationsAsync(this IHost host)
     {
         using var scope = host.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
 
         await dbContext.Database.MigrateAsync();
     }

@@ -11,9 +11,9 @@ namespace EventFlow.Bookings.Application.Services;
 /// Сервис для создания, получения и обработки бронирований.
 /// </summary>
 public class BookingService(
-    IEventRepository eventRepository,
     IBookingRepository bookingRepository,
-    IBookingTaskQueue bookingTaskQueue) : IBookingService
+    IBookingTaskQueue bookingTaskQueue,
+    IBookingConfirmedPublisher publisher) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
     private const int MaxActiveBookingsPerUser = 10;
@@ -25,19 +25,11 @@ public class BookingService(
             ct.ThrowIfCancellationRequested();
 
             Booking booking;
-            Event ev;
+           
 
             await BookingSemaphore.WaitAsync(ct);
             try
             {
-                ev = await eventRepository.GetByIdAsync(eventId, ct)
-                    ?? throw new NotFoundException("Event", eventId);
-
-                if (ev.StartAt <= DateTime.UtcNow)
-                {
-                    throw new EventAlreadyStartedException("Нельзя забронировать событие, которое уже началось.");
-                }
-
                 var activeBookingsCount = await bookingRepository.CountActiveByUserIdAsync(userId, ct);
 
                 if (activeBookingsCount >= MaxActiveBookingsPerUser)
@@ -47,7 +39,6 @@ public class BookingService(
                         $"{MaxActiveBookingsPerUser} активных бронирований.");
                 }
 
-                ev.ReserveSeats();
 
                 try
                 {
@@ -59,12 +50,10 @@ public class BookingService(
                 }
                 catch (OperationCanceledException)
                 {
-                    ev.ReleaseSeats();
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    ev.ReleaseSeats();
                     throw new InvalidOperationException("Не удалось создать бронирование.", ex);
                 }
 
@@ -78,14 +67,6 @@ public class BookingService(
         catch (NotFoundException ex)
         {
             throw AppException.NotFound(ex.Message, ex);
-        }
-        catch (NoAvailableSeatsException ex)
-        {
-            throw AppException.NoAvailableSeats(ex.Message, ex);
-        }
-        catch (EventAlreadyStartedException ex)
-        {
-            throw AppException.EventAlreadyStarted(ex.Message, ex);
         }
         catch (BookingLimitExceededException ex)
         {
@@ -124,7 +105,7 @@ public class BookingService(
                 return MapToDto(booking);
             }
 
-            var eventExists = await eventRepository.GetByIdAsync(booking.EventId, ct) is not null;
+        
 
             if (!eventExists)
             {
@@ -166,12 +147,10 @@ public class BookingService(
                 throw new ForbiddenOperationException("Пользователь может отменить только свою бронь");
             }
 
-            var ev = await eventRepository.GetByIdAsync(booking.EventId, cancellationToken)
-                ?? throw new NotFoundException("Event", booking.EventId);
+            
 
             booking.Cancel();
 
-            ev.ReleaseSeats();
 
             await bookingRepository.SaveChangesAsync(cancellationToken);
         }

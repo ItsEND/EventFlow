@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventFlow.Bookings.Infrastructure.DataAccess;
 
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options) : DbContext(options)
 {
     public DbSet<Booking> Bookings => Set<Booking>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BookingDbContext).Assembly);
     }
 }
