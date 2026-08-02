@@ -4,7 +4,7 @@ using EventFlow.Bookings.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventService.Tests;
+namespace EventFlow.Tests;
 
 public class BookingServiceTests : IDisposable
 {

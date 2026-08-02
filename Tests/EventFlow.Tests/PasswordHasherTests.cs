@@ -1,6 +1,6 @@
 using EventFlow.Users.Infrastructure.Security;
 
-namespace EventService.Tests;
+namespace EventFlow.Tests;
 
 public class PasswordHasherTests
 {

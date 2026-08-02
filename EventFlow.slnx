@@ -23,6 +23,6 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/EventApi.IntegrationTests/EventApi.IntegrationTests.csproj" Id="9cf9a49c-f207-4732-a7df-d4c6f3e789e0" />
-    <Project Path="Tests/EventService.Tests/EventService.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />
+    <Project Path="Tests/EventFlow.Tests/EventFlow.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />
   </Folder>
 </Solution>

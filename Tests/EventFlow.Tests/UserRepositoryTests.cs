@@ -2,7 +2,7 @@ using EventFlow.Users.Application.Abstractions.Repositories;
 using EventFlow.Users.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventService.Tests;
+namespace EventFlow.Tests;
 
 public class UserRepositoryTests : IDisposable
 {

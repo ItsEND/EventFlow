@@ -7,7 +7,7 @@ using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventService.Tests;
+namespace EventFlow.Tests;
 
 public class EventServiceTests : IDisposable
 {

@@ -7,7 +7,7 @@ using EventFlow.Users.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventService.Tests;
+namespace EventFlow.Tests;
 
 public class UserServiceTests : IDisposable
 {
