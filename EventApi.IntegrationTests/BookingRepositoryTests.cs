@@ -1,6 +1,6 @@
 using EventApi.IntegrationTests.Infrastructure;
-using EventFlow.Domain.Models;
-using EventFlow.Infrastructure.Repositories;
+using EventFlow.Events.Domain.Models;
+using EventFlow.Events.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventApi.IntegrationTests;

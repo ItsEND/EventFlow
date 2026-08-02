@@ -1,5 +1,5 @@
-﻿using EventFlow.Application.Abstractions.Repositories;
-using EventFlow.Domain.Models;
+﻿using EventFlow.Events.Application.Abstractions.Repositories;
+using EventFlow.Events.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventService.Tests;

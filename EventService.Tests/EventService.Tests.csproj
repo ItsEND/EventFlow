@@ -23,9 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EventFlow.Application\EventFlow.Application.csproj" />
-    <ProjectReference Include="..\EventFlow.Domain\EventFlow.Domain.csproj" />
-    <ProjectReference Include="..\EventFlow.Infrastructure\EventFlow.Infrastructure.csproj" />
+    <ProjectReference Include="..\src\Services\Events\EventFlow.Events.Application\EventFlow.Events.Application.csproj" />
+    <ProjectReference Include="..\src\Services\Events\EventFlow.Events.Domain\EventFlow.Events.Domain.csproj" />
+    <ProjectReference Include="..\src\Services\Events\EventFlow.Events.Infrastructure\EventFlow.Events.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

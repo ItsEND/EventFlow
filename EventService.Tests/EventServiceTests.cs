@@ -1,9 +1,9 @@
-using EventFlow.Application.Abstractions.Services;
-using EventFlow.Application.Dtos;
-using EventFlow.Application.Dtos.Events;
-using EventFlow.Application.Exceptions;
-using EventFlow.Domain.Models;
-using EventFlow.Infrastructure.DataAccess;
+using EventFlow.Events.Application.Dtos;
+using EventFlow.Events.Application.Dtos.Events;
+using EventFlow.Events.Domain.Models;
+using EventFlow.Events.Application.Abstractions.Services;
+using EventFlow.Events.Application.Exceptions;
+using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 

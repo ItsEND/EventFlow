@@ -1,4 +1,4 @@
-using EventFlow.Infrastructure.DataAccess;
+using EventFlow.Events.Infrastructure.DataAccess;
 
 namespace EventApi.IntegrationTests.Infrastructure;
 

@@ -1,6 +1,6 @@
 using EventApi.IntegrationTests.Infrastructure;
-using EventFlow.Domain.Models;
-using EventFlow.Infrastructure.Repositories;
+using EventFlow.Events.Domain.Models;
+using EventFlow.Events.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventApi.IntegrationTests;
@@ -97,7 +97,7 @@ public class EventRepositoryTests : RepositoryTestBase
         var repository = new EventRepository(context);
 
         var result = await repository.GetPageAsync(
-            new EventFlow.Application.Dtos.Events.GetEventsQuery
+            new EventFlow.Events.Application.Dtos.Events.GetEventsQuery
             {
                 Title = title,
                 From = dateFrom,
@@ -120,7 +120,7 @@ public class EventRepositoryTests : RepositoryTestBase
         var repository = new EventRepository(context);
 
         var result = await repository.GetPageAsync(
-            new EventFlow.Application.Dtos.Events.GetEventsQuery
+            new EventFlow.Events.Application.Dtos.Events.GetEventsQuery
             {
                 Page = 2,
                 PageSize = 2

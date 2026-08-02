@@ -1,0 +1,12 @@
+using EventFlow.Events.Domain.Models;
+
+namespace EventFlow.Events.Application.Abstractions.Repositories;
+
+public interface IBookingRepository
+{
+    void Add(Booking booking);
+    Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Guid>> GetPendingIdsAsync(CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<int> CountActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+}

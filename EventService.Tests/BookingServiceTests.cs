@@ -1,8 +1,8 @@
-using EventFlow.Application.Abstractions.Services;
-using EventFlow.Application.Dtos.Booking;
-using EventFlow.Application.Exceptions;
-using EventFlow.Domain.Models;
-using EventFlow.Infrastructure.DataAccess;
+using EventFlow.Events.Application.Abstractions.Services;
+using EventFlow.Events.Application.Dtos.Booking;
+using EventFlow.Events.Application.Exceptions;
+using EventFlow.Events.Domain.Models;
+using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;

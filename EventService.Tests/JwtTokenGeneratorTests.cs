@@ -1,5 +1,5 @@
-﻿using EventFlow.Domain.Models;
-using EventFlow.Infrastructure.Security;
+﻿using EventFlow.Events.Domain.Models;
+using EventFlow.Events.Infrastructure.Security;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

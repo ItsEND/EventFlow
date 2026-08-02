@@ -1,10 +1,11 @@
-using EventFlow.Application.Abstractions.Repositories;
-using EventFlow.Application.Abstractions.Security;
-using EventFlow.Application.Abstractions.Services;
-using EventFlow.Infrastructure.Background;
-using EventFlow.Infrastructure.DataAccess;
-using EventFlow.Infrastructure.Repositories;
-using EventFlow.Infrastructure.Security;
+using EventFlow.Events.Application.Abstractions.Repositories;
+using EventFlow.Events.Application.Abstractions.Security;
+using EventFlow.Events.Application.Abstractions.Services;
+using EventFlow.Events.Application.Services;
+using EventFlow.Events.Infrastructure.Background;
+using EventFlow.Events.Infrastructure.DataAccess;
+using EventFlow.Events.Infrastructure.Repositories;
+using EventFlow.Events.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -33,9 +34,9 @@ internal static class TestServiceProviderFactory
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-        services.AddScoped<IEventService, EventFlow.Application.Services.EventService>();
-        services.AddScoped<IBookingService, EventFlow.Application.Services.BookingService>();
-        services.AddScoped<IUserService, EventFlow.Application.Services.UserService>();
+        services.AddScoped<IEventService, EventFlow.Events.Application.Services.EventService>();
+        services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
        
         services.AddSingleton(

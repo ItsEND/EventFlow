@@ -1,4 +1,5 @@
-﻿using EventFlow.Infrastructure.Security;
+﻿using EventFlow.Events.Infrastructure.Security;
+
 namespace EventService.Tests;
 
 public class PasswordHasherTests
