@@ -1,6 +1,6 @@
-﻿using EventFlow.Users.Application.Contracts;
-using EventFlow.Users.Api.Contracts.Auth;
+﻿using EventFlow.Users.Api.Contracts.Auth;
 using EventFlow.Users.Application.Abstractions.Services;
+using EventFlow.Users.Application.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,8 +44,8 @@ public class AuthController(IUserService userService) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TokenResponse>> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        var token = await userService.LoginAsync(request.Login,request.Password, ct);
+        var token = await userService.LoginAsync(request.Login, request.Password, ct);
 
-        return Ok (new TokenResponse{ Token = token });
+        return Ok(new TokenResponse { Token = token });
     }
 }

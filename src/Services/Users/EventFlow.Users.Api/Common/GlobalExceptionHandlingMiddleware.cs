@@ -2,7 +2,7 @@ using EventFlow.Users.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
-namespace EventFlow.Users.Api;
+namespace EventFlow.Users.Api.Common;
 
 /// <summary>
 /// Middleware для глобальной обработки необработанных исключений

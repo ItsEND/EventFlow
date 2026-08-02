@@ -24,16 +24,11 @@ public class User
 
     public static User Create(string login, string passwordHash, UserRole role = UserRole.User)
     {
-        if (string.IsNullOrWhiteSpace(login))
-        {
-            throw new ValidationException("Логин пользователя не может быть пустым");
-        }
-        if (string.IsNullOrWhiteSpace(passwordHash))
-        {
-            throw new ValidationException("Пароль пользователя не может быть пустым");
-        }
-
-        return new User(Guid.NewGuid(), login.Trim(), passwordHash, role);
+        return string.IsNullOrWhiteSpace(login)
+            ? throw new ValidationException("Логин пользователя не может быть пустым")
+            : string.IsNullOrWhiteSpace(passwordHash)
+            ? throw new ValidationException("Пароль пользователя не может быть пустым")
+            : new User(Guid.NewGuid(), login.Trim(), passwordHash, role);
     }
 
 

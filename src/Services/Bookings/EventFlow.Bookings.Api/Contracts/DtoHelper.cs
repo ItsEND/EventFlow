@@ -1,4 +1,3 @@
-using EventFlow.Bookings.Api.Contracts.Booking;
 using EventFlow.Bookings.Application.Contracts;
 
 namespace EventFlow.Bookings.Api.Contracts;
@@ -8,7 +7,7 @@ namespace EventFlow.Bookings.Api.Contracts;
 /// </summary>
 public static class DtoHelper
 {
-  
+
 
     /// <summary>
     /// Преобразует внутреннюю модель бронирования в DTO ответа.

@@ -20,5 +20,5 @@ public sealed class UserException : Exception
         => new(UserErrorCode.LoginAlreadyExists, message, innerException);
     public static UserException Forbidden(string message, Exception? innerException = null)
         => new(UserErrorCode.Forbidden, message, innerException);
-    
+
 }

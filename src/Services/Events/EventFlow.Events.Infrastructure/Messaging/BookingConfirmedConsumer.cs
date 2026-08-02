@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 using EventFlow.Contracts;
-using EventFlow.Events.Application.Abstractions.Repositories;
+using EventFlow.Events.Infrastructure.Messaging.Inbox;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -78,19 +78,13 @@ public sealed class BookingConfirmedConsumer(IServiceScopeFactory scopeFactory, 
                     await CommitWithRetryAsync(consumer, consumeResult, stoppingToken);
 
                 }
-                catch (OperationCanceledException)
-                    when (stoppingToken.IsCancellationRequested)
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
                     break;
                 }
                 catch (Exception exception)
                 {
-                    await MoveToDeadLetterAsync(
-                        deadLetterProducer,
-                        consumer,
-                        consumeResult,
-                        exception,
-                        stoppingToken);
+                    await MoveToDeadLetterAsync(deadLetterProducer, consumer, consumeResult, exception, stoppingToken);
                 }
             }
         }
@@ -142,29 +136,9 @@ public sealed class BookingConfirmedConsumer(IServiceScopeFactory scopeFactory, 
     {
         await using var scope = scopeFactory.CreateAsyncScope();
 
-        var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var handler = scope.ServiceProvider.GetRequiredService<BookingConfirmedInboxHandler>();
 
-        var ev = await eventRepository.GetByIdAsync(message.EventId, cancellationToken);
-
-        if (ev is null)
-        {
-            throw new InvalidOperationException($"Мероприятие {message.EventId} не найдено.");
-        }
-
-        if (!ev.TryReserveSeats(message.SeatCount))
-        {
-            throw new InvalidOperationException(
-               $"На мероприятии {message.EventId} недостаточно свободных мест. " +
-               $"Запрошено мест: {message.SeatCount}.");
-        }
-        await eventRepository.SaveChangesAsync(cancellationToken);
-
-        logger.LogInformation(
-            "Для мероприятия {EventId} зарезервировано мест: {SeatCount}. " +
-            "Источник — бронь {BookingId}",
-            message.EventId,
-            message.SeatCount,
-            message.BookingId);
+        await handler.HandleAsync(message, cancellationToken);
     }
 
     private async Task MoveToDeadLetterAsync(IProducer<string, string> deadLetterProducer, IConsumer<string, string> consumer, ConsumeResult<string, string> consumeResult, Exception processingException, CancellationToken cancellationToken)
@@ -261,12 +235,9 @@ public sealed class BookingConfirmedConsumer(IServiceScopeFactory scopeFactory, 
 
     private BookingConfirmed DeserializeMessage(ConsumeResult<string, string> consumeResult)
     {
-        if (string.IsNullOrWhiteSpace(consumeResult.Message.Value))
-        {
-            throw new JsonException("Тело сообщения Kafka пусто.");
-        }
-
-        return JsonSerializer.Deserialize<BookingConfirmed>(consumeResult.Message.Value)
+        return string.IsNullOrWhiteSpace(consumeResult.Message.Value)
+            ? throw new JsonException("Тело сообщения Kafka пусто.")
+            : JsonSerializer.Deserialize<BookingConfirmed>(consumeResult.Message.Value)
             ?? throw new JsonException("Сообщение BookingConfirmed пусто.");
     }
 

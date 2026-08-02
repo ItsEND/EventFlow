@@ -5,7 +5,6 @@ using EventFlow.Events.Application.Contracts;
 using EventFlow.Events.Application.Contracts.Events;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 namespace EventFlow.Events.Api.Controllers;
 
 /// <summary>

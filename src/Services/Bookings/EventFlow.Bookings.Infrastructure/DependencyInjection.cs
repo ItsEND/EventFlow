@@ -1,9 +1,11 @@
-using EventFlow.Bookings.Application.Abstractions.Publisher;
+using EventFlow.Bookings.Application.Abstractions.Messaging;
+using EventFlow.Bookings.Application.Abstractions.Messaging.Outbox;
 using EventFlow.Bookings.Application.Abstractions.Repositories;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using EventFlow.Bookings.Infrastructure.Background;
 using EventFlow.Bookings.Infrastructure.DataAccess;
-using EventFlow.Bookings.Infrastructure.Publisher;
+using EventFlow.Bookings.Infrastructure.Messaging.Outbox;
+using EventFlow.Bookings.Infrastructure.Messaging.Publisher;
 using EventFlow.Bookings.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,11 +26,12 @@ public static class DependencyInjection
 
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IOutboxWriter, OutboxWriter>();
 
         services.Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.SectionName));
 
-        services.AddSingleton<IBookingConfirmedPublisher, BookingConfirmedPublisher>();
-
+        services.AddSingleton<IMessagePublisher, KafkaMessagePublisher>();
+        services.AddHostedService<OutboxPublisherBackgroundService>();
 
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
         services.AddHostedService<BookingProcessingBackgroundService>();

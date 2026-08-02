@@ -1,16 +1,14 @@
 ﻿using Confluent.Kafka;
-using EventFlow.Bookings.Application.Abstractions.Publisher;
-using EventFlow.Contracts;
+using EventFlow.Bookings.Application.Abstractions.Messaging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
-namespace EventFlow.Bookings.Infrastructure.Publisher;
+namespace EventFlow.Bookings.Infrastructure.Messaging.Publisher;
 
-public class BookingConfirmedPublisher : IBookingConfirmedPublisher, IDisposable
+public sealed class KafkaMessagePublisher : IMessagePublisher, IDisposable
 {
     private readonly IProducer<string, string> _producer;
 
-    public BookingConfirmedPublisher(IOptions<KafkaOptions> options)
+    public KafkaMessagePublisher(IOptions<KafkaOptions> options)
     {
         var bootstrapServers = options.Value.BootstrapServers;
 
@@ -23,27 +21,25 @@ public class BookingConfirmedPublisher : IBookingConfirmedPublisher, IDisposable
         {
             BootstrapServers = bootstrapServers,
             Acks = Acks.All,
+            EnableIdempotence = true
         };
 
         _producer = new ProducerBuilder<string, string>(producerConfig).Build();
     }
 
-
-
-    public async Task PublishAsync(BookingConfirmed message, CancellationToken cancellationToken)
+    public async Task PublishAsync(string topic, string messageKey, string payload, CancellationToken cancellationToken)
     {
-        var kafaMessage = new Message<string, string>
+        var kafkaMessage = new Message<string, string>
         {
-            Key = message.EventId.ToString(),
-            Value = JsonSerializer.Serialize(message)
+            Key = messageKey,
+            Value = payload
         };
 
-        await _producer.ProduceAsync(KafkaTopics.BookingConfirmed, kafaMessage, cancellationToken);
+        await _producer.ProduceAsync(topic, kafkaMessage, cancellationToken);
     }
     public void Dispose()
     {
         _producer.Flush(TimeSpan.FromSeconds(5));
         _producer.Dispose();
     }
-
 }

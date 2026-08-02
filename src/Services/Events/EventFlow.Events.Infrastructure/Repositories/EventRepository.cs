@@ -1,6 +1,6 @@
-using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Contracts.Events;
+using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 

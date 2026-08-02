@@ -1,0 +1,10 @@
+.git
+.github
+.vs
+.tmp
+**/bin
+**/obj
+TestResults
+Tests
+README.md
+docker-compose.yml

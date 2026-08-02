@@ -1,3 +1,4 @@
+using EventFlow.Bookings.Application.Abstractions.Repositories;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using EventFlow.Bookings.Application.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public class BookingProcessingBackgroundService(
     {
         try
         {
+            await EnqueuePendingBookingsAsync(stoppingToken);
             await foreach (var bookingId in bookingTaskQueue.DequeueAllAsync(stoppingToken))
             {
                 await ProcessBookingAsync(bookingId, stoppingToken);
@@ -38,7 +40,23 @@ public class BookingProcessingBackgroundService(
             throw;
         }
     }
+    private async Task EnqueuePendingBookingsAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
 
+        var bookingRepository = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+
+        var pendingBookingIds = await bookingRepository.GetPendingIdsAsync(cancellationToken);
+
+        foreach (var bookingId in pendingBookingIds)
+        {
+            await bookingTaskQueue.EnqueueAsync(bookingId, cancellationToken);
+        }
+
+        logger.LogInformation(
+            "В очередь фоновой обработки восстановлено броней: {Count}.",
+            pendingBookingIds.Count);
+    }
     private async Task ProcessBookingAsync(Guid bookingId, CancellationToken stoppingToken)
     {
         try

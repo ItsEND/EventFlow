@@ -1,6 +1,7 @@
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Infrastructure.DataAccess;
 using EventFlow.Events.Infrastructure.Messaging;
+using EventFlow.Events.Infrastructure.Messaging.Inbox;
 using EventFlow.Events.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IEventRepository, EventRepository>();
 
         services.Configure<KafkaOptions>(configuration.GetSection(KafkaOptions.SectionName));
+        services.AddScoped<BookingConfirmedInboxHandler>();
 
         services.AddHostedService<KafkaTopicInitializer>();
         services.AddHostedService<BookingConfirmedConsumer>();

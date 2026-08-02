@@ -1,4 +1,4 @@
-﻿namespace EventFlow.Bookings.Infrastructure.Publisher;
+﻿namespace EventFlow.Bookings.Infrastructure.Messaging.Publisher;
 
 public sealed class KafkaOptions
 {

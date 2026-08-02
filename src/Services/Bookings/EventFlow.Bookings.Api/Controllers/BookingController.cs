@@ -1,5 +1,4 @@
 using EventFlow.Bookings.Api.Contracts;
-using EventFlow.Bookings.Api.Contracts.Booking;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -14,13 +14,13 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
 
         builder.Property(b => b.Id)
             .ValueGeneratedNever();
-        
+
         builder.Property(booking => booking.UserId)
             .IsRequired();
-            
+
         builder.Property(booking => booking.EventId)
             .IsRequired();
-        
+
         builder.Property(b => b.Status)
             .HasConversion<string>()
             .IsRequired();

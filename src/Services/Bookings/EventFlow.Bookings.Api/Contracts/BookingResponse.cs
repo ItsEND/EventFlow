@@ -1,4 +1,4 @@
-﻿namespace EventFlow.Bookings.Api.Contracts.Booking;
+﻿namespace EventFlow.Bookings.Api.Contracts;
 
 /// <summary>
 /// Ответ с текущим состоянием брони.

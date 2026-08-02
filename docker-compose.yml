@@ -1,7 +1,13 @@
-# Локальная инфраструктура EventFlow.
-# Запуск: docker compose up -d
+# Полная локальная среда EventFlow.
+# Запуск: docker compose up --build
 # Остановка: docker compose down
 # Полное удаление локальных данных: docker compose down -v
+
+x-jwt-environment: &jwt-environment
+  Jwt__Secret: 739C49F6-4E4B-d93d8a3c-34b3-43a2-9ab7-f25ee0bc9512-49A3-977D-CB5D16C8C6F6
+  Jwt__Issuer: EventFlow
+  Jwt__Audience: EventFlow.Client
+  Jwt__LifetimeMinutes: "60"
 
 services:
   users-db:
@@ -87,6 +93,64 @@ services:
       timeout: 10s
       retries: 15
       start_period: 20s
+
+  users-api:
+    build:
+      context: .
+      dockerfile: src/Services/Users/EventFlow.Users.Api/Dockerfile
+    container_name: eventflow-users-api
+    restart: unless-stopped
+    environment:
+      <<: *jwt-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__UserConnection: Host=users-db;Port=5432;Database=eventflow_users;Username=postgres;Password=postgres
+    ports:
+      - "5056:8080"
+    depends_on:
+      users-db:
+        condition: service_healthy
+
+  events-api:
+    build:
+      context: .
+      dockerfile: src/Services/Events/EventFlow.Events.Api/Dockerfile
+    container_name: eventflow-events-api
+    restart: unless-stopped
+    environment:
+      <<: *jwt-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__EventConnection: Host=events-db;Port=5432;Database=eventflow_events;Username=postgres;Password=postgres
+      Kafka__BootstrapServers: kafka:29092
+      Kafka__ConsumerGroup: eventflow-events
+    ports:
+      - "5265:8080"
+    depends_on:
+      events-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  bookings-api:
+    build:
+      context: .
+      dockerfile: src/Services/Bookings/EventFlow.Bookings.Api/Dockerfile
+    container_name: eventflow-bookings-api
+    restart: unless-stopped
+    environment:
+      <<: *jwt-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__BookingConnection: Host=bookings-db;Port=5432;Database=eventflow_bookings;Username=postgres;Password=postgres
+      Kafka__BootstrapServers: kafka:29092
+    ports:
+      - "5176:8080"
+    depends_on:
+      bookings-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4:latest

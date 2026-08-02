@@ -1,11 +1,11 @@
-using EventFlow.Bookings.Application.Abstractions.Publisher;
+using EventFlow.Bookings.Application.Abstractions.Messaging.Outbox;
 using EventFlow.Bookings.Application.Abstractions.Repositories;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using EventFlow.Bookings.Application.Services;
 using EventFlow.Bookings.Infrastructure.Background;
 using EventFlow.Bookings.Infrastructure.DataAccess;
+using EventFlow.Bookings.Infrastructure.Messaging.Outbox;
 using EventFlow.Bookings.Infrastructure.Repositories;
-using EventFlow.Contracts;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Infrastructure.DataAccess;
@@ -41,6 +41,7 @@ internal static class TestServiceProviderFactory
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IOutboxWriter, OutboxWriter>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IEventService, Events.Application.Services.EventService>();
@@ -48,8 +49,7 @@ internal static class TestServiceProviderFactory
         services.AddScoped<IUserService, UserService>();
 
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
-        services.AddSingleton<IBookingConfirmedPublisher, NoOpBookingConfirmedPublisher>();
-        
+
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton(
             Options.Create(new JwtOptions
@@ -67,13 +67,5 @@ internal static class TestServiceProviderFactory
                 ValidateScopes = true,
                 ValidateOnBuild = true
             });
-    }
-
-    private sealed class NoOpBookingConfirmedPublisher : IBookingConfirmedPublisher
-    {
-        public Task PublishAsync(BookingConfirmed message, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
     }
 }

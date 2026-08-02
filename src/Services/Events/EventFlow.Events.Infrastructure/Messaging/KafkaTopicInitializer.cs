@@ -45,7 +45,7 @@ public sealed class KafkaTopicInitializer(IOptions<KafkaOptions> options, ILogge
             logger.LogInformation("Топик Kafka {Topic} создан",
              topicName);
         }
-        catch (CreateTopicsException exception) when(exception.Results.All(result => result.Error.Code == ErrorCode.TopicAlreadyExists))
+        catch (CreateTopicsException exception) when (exception.Results.All(result => result.Error.Code == ErrorCode.TopicAlreadyExists))
         {
             logger.LogInformation("Топик Kafka {Topic} уже существует",
               topicName);
@@ -59,7 +59,7 @@ public sealed class KafkaTopicInitializer(IOptions<KafkaOptions> options, ILogge
         }
     }
 
-    public Task StopAsync (CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }

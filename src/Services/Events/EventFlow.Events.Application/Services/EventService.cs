@@ -1,10 +1,10 @@
-using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Application.Contracts;
 using EventFlow.Events.Application.Contracts.Events;
 using EventFlow.Events.Application.Exceptions;
 using EventFlow.Events.Domain.Exceptions;
+using EventFlow.Events.Domain.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventFlow.Events.Application.Services;

@@ -1,4 +1,4 @@
-using EventFlow.Bookings.Application.Abstractions.Publisher;
+using EventFlow.Bookings.Application.Abstractions.Messaging.Outbox;
 using EventFlow.Bookings.Application.Abstractions.Repositories;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using EventFlow.Bookings.Application.Contracts;
@@ -15,7 +15,7 @@ namespace EventFlow.Bookings.Application.Services;
 public class BookingService(
     IBookingRepository bookingRepository,
     IBookingTaskQueue bookingTaskQueue,
-    IBookingConfirmedPublisher bookingConfirmedPublisher) : IBookingService
+    IOutboxWriter outboxWriter) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
     private const int MaxActiveBookingsPerUser = 10;
@@ -27,7 +27,7 @@ public class BookingService(
             ct.ThrowIfCancellationRequested();
 
             Booking booking;
-           
+
 
             await BookingSemaphore.WaitAsync(ct);
             try
@@ -108,11 +108,12 @@ public class BookingService(
             }
 
             booking.Confirm();
-            await bookingRepository.SaveChangesAsync(ct);
 
             var message = new BookingConfirmed(booking.Id, booking.EventId, booking.UserId, 1, booking.ProcessedAt!.Value);
 
-            await bookingConfirmedPublisher.PublishAsync(message, ct);
+            outboxWriter.Add(message);
+
+            await bookingRepository.SaveChangesAsync(ct);
 
             return MapToDto(booking);
         }
@@ -145,7 +146,7 @@ public class BookingService(
                 throw new ForbiddenOperationException("Пользователь может отменить только свою бронь");
             }
 
-            
+
 
             booking.Cancel();
 

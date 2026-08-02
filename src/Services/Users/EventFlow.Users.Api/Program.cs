@@ -1,9 +1,9 @@
-using EventFlow.Users.Infrastructure.Security;
-using Microsoft.AspNetCore.Mvc;
-using EventFlow.Users.Api;
+using EventFlow.Users.Api.Common;
 using EventFlow.Users.Application;
 using EventFlow.Users.Infrastructure;
+using EventFlow.Users.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Reflection;

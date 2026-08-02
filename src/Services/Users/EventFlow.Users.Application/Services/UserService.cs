@@ -12,7 +12,7 @@ public class UserService(IUserRepository userRepository, IPasswordHasher passwor
 {
 
 
-    public async Task RegisterAsync(RegisterUserModel model,  CancellationToken ct = default)
+    public async Task RegisterAsync(RegisterUserModel model, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(model.Login))
         {
@@ -49,26 +49,17 @@ public class UserService(IUserRepository userRepository, IPasswordHasher passwor
         }
 
         var user = await userRepository.GetByLoginAsync(login, ct);
-        if (user is null || !passwordHasher.Verify(password, user.PasswordHash))
-        {
-            throw UserException.InvalidCredentials("Неверный логин или пароль.");
-        }
-
-        return jwtTokenGenerator.Generate(user);
+        return user is null || !passwordHasher.Verify(password, user.PasswordHash)
+            ? throw UserException.InvalidCredentials("Неверный логин или пароль.")
+            : jwtTokenGenerator.Generate(user);
     }
 
     private static UserRole ParseRole(string? role)
     {
-        if (string.IsNullOrWhiteSpace(role))
-        {
-            return UserRole.User;
-        }
-
-        if (!Enum.TryParse<UserRole>(role, ignoreCase: true, out var parsedRole) || !Enum.IsDefined(parsedRole))
-        {
-            throw new ValidationException("Допустимые роли: User и Admin.");
-        }
-
-        return parsedRole;
+        return string.IsNullOrWhiteSpace(role)
+            ? UserRole.User
+            : !Enum.TryParse<UserRole>(role, ignoreCase: true, out var parsedRole) || !Enum.IsDefined(parsedRole)
+            ? throw new ValidationException("Допустимые роли: User и Admin.")
+            : parsedRole;
     }
 }
