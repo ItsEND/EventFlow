@@ -21,6 +21,8 @@
   <Folder Name="/Shared/">
     <Project Path="src/Shared/EventFlow.Contracts/EventFlow.Contracts.csproj" Id="682d864c-d412-404d-a220-a8c4d626a4ac" />
   </Folder>
-  <Project Path="EventApi.IntegrationTests/EventApi.IntegrationTests.csproj" Id="9cf9a49c-f207-4732-a7df-d4c6f3e789e0" />
-  <Project Path="EventService.Tests/EventService.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />
+  <Folder Name="/Tests/">
+    <Project Path="Tests/EventApi.IntegrationTests/EventApi.IntegrationTests.csproj" Id="9cf9a49c-f207-4732-a7df-d4c6f3e789e0" />
+    <Project Path="Tests/EventService.Tests/EventService.Tests.csproj" Id="2f9f3365-4a5d-4132-bae4-832a3de0bd2f" />
+  </Folder>
 </Solution>

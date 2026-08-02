@@ -1,4 +1,4 @@
-﻿using EventFlow.Events.Infrastructure.Security;
+using EventFlow.Users.Infrastructure.Security;
 
 namespace EventService.Tests;
 
@@ -23,9 +23,7 @@ public class PasswordHasherTests
         const string password = "secret123";
         var hash = _passwordHasher.Hash(password);
 
-        var result = _passwordHasher.Verify(password, hash);
-
-        Assert.True(result);
+        Assert.True(_passwordHasher.Verify(password, hash));
     }
 
     [Fact]
@@ -33,9 +31,7 @@ public class PasswordHasherTests
     {
         var hash = _passwordHasher.Hash("correct-password");
 
-        var result = _passwordHasher.Verify("incorrect-password", hash);
-
-        Assert.False(result);
+        Assert.False(_passwordHasher.Verify("incorrect-password", hash));
     }
 
     [Fact]
@@ -43,10 +39,6 @@ public class PasswordHasherTests
     {
         const string password = "secret123";
 
-        var firstHash = _passwordHasher.Hash(password);
-        var secondHash = _passwordHasher.Hash(password);
-
-        Assert.Equal(firstHash, secondHash);
+        Assert.Equal(_passwordHasher.Hash(password), _passwordHasher.Hash(password));
     }
-
 }

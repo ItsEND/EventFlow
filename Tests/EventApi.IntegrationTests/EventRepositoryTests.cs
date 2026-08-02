@@ -17,14 +17,14 @@ public class EventRepositoryTests : RepositoryTestBase
     {
         var newEvent = CreateEvent("Новый митап", Utc(2026, 6, 1, 18), Utc(2026, 6, 1, 20));
 
-        await using (var context = CreateContext())
+        await using (var context = CreateEventsContext())
         {
             var repository = new EventRepository(context);
             repository.Add(newEvent);
             await repository.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verifyContext = CreateContext();
+        await using var verifyContext = CreateEventsContext();
 
         var saved = await verifyContext.Events.AsNoTracking()
             .SingleOrDefaultAsync(e => e.Id == newEvent.Id, CancellationToken.None);
@@ -42,7 +42,7 @@ public class EventRepositoryTests : RepositoryTestBase
         var existingEvent = CreateEvent("Backend Meetup", Utc(2026, 4, 15, 10), Utc(2026, 4, 15, 18));
         await SeedEventsAsync(existingEvent);
 
-        await using var context = CreateContext();
+        await using var context = CreateEventsContext();
         var repository = new EventRepository(context);
 
         var result = await repository.GetByIdAsync(existingEvent.Id, CancellationToken.None);
@@ -55,7 +55,7 @@ public class EventRepositoryTests : RepositoryTestBase
     [Fact]
     public async Task GetByIdAsync_ShouldReturnNull_WhenEventDoesNotExist()
     {
-        await using var context = CreateContext();
+        await using var context = CreateEventsContext();
         var repository = new EventRepository(context);
 
         var result = await repository.GetByIdAsync(Guid.NewGuid(), CancellationToken.None);
@@ -69,7 +69,7 @@ public class EventRepositoryTests : RepositoryTestBase
         var existingEvent = CreateEvent("Удаляемое мероприятие", Utc(2026, 6, 1, 10), Utc(2026, 6, 1, 12));
         await SeedEventsAsync(existingEvent);
 
-        await using (var context = CreateContext())
+        await using (var context = CreateEventsContext())
         {
             var repository = new EventRepository(context);
             var loadedEvent = await repository.GetByIdAsync(existingEvent.Id, CancellationToken.None);
@@ -80,7 +80,7 @@ public class EventRepositoryTests : RepositoryTestBase
             await repository.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using var verifyContext = CreateContext();
+        await using var verifyContext = CreateEventsContext();
 
         var exists = await verifyContext.Events.AnyAsync(e => e.Id == existingEvent.Id, CancellationToken.None);
 
@@ -93,11 +93,11 @@ public class EventRepositoryTests : RepositoryTestBase
     {
         await SeedEventsAsync(CreateSeedEvents());
 
-        await using var context = CreateContext();
+        await using var context = CreateEventsContext();
         var repository = new EventRepository(context);
 
         var result = await repository.GetPageAsync(
-            new EventFlow.Events.Application.Dtos.Events.GetEventsQuery
+            new EventFlow.Events.Application.Contracts.Events.GetEventsQuery
             {
                 Title = title,
                 From = dateFrom,
@@ -116,11 +116,11 @@ public class EventRepositoryTests : RepositoryTestBase
     {
         await SeedEventsAsync(CreateSeedEvents());
 
-        await using var context = CreateContext();
+        await using var context = CreateEventsContext();
         var repository = new EventRepository(context);
 
         var result = await repository.GetPageAsync(
-            new EventFlow.Events.Application.Dtos.Events.GetEventsQuery
+            new EventFlow.Events.Application.Contracts.Events.GetEventsQuery
             {
                 Page = 2,
                 PageSize = 2
@@ -196,7 +196,7 @@ public class EventRepositoryTests : RepositoryTestBase
 
     private async Task SeedEventsAsync(params Event[] events)
     {
-        await using var context = CreateContext();
+        await using var context = CreateEventsContext();
 
         context.Events.AddRange(events);
 
