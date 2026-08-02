@@ -15,13 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
 
 var jwtSecret = jwtSection["Secret"]
-    ?? throw new InvalidOperationException("JWT secret was not configured.");
+    ?? throw new InvalidOperationException("Секретный ключ JWT не настроен.");
 
 var jwtIssuer = jwtSection["Issuer"]
-    ?? throw new InvalidOperationException("JWT issuer was not configured.");
+    ?? throw new InvalidOperationException("Издатель JWT не настроен.");
 
 var jwtAudience = jwtSection["Audience"]
-    ?? throw new InvalidOperationException("JWT audience was not configured.");
+    ?? throw new InvalidOperationException("Аудитория JWT не настроена.");
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>

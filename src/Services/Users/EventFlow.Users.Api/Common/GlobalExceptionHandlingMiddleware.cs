@@ -51,7 +51,7 @@ public class GlobalExceptionHandlingMiddleware
     {
         _logger.LogError(
             ex,
-            "Unhandled exception. Method={Method}, Path={Path}, TraceId={TraceId}",
+            "Произошло необработанное исключение. Метод={Method}, Путь={Path}, TraceId={TraceId}",
             httpContext.Request.Method,
             httpContext.Request.Path,
             httpContext.TraceIdentifier);
@@ -59,7 +59,7 @@ public class GlobalExceptionHandlingMiddleware
         if (httpContext.Response.HasStarted)
         {
             _logger.LogWarning(
-                "Cannot write error response because the response already started TraceId = {TraceId}",
+                "Невозможно записать ответ об ошибке: формирование ответа уже началось. TraceId={TraceId}",
                 httpContext.TraceIdentifier);
             return;
         }

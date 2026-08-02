@@ -1,9 +1,11 @@
+using EventFlow.Bookings.Application.Abstractions.Publisher;
 using EventFlow.Bookings.Application.Abstractions.Repositories;
 using EventFlow.Bookings.Application.Abstractions.Services;
 using EventFlow.Bookings.Application.Contracts;
 using EventFlow.Bookings.Application.Exceptions;
 using EventFlow.Bookings.Domain.Exceptions;
 using EventFlow.Bookings.Domain.Models;
+using EventFlow.Contracts;
 
 namespace EventFlow.Bookings.Application.Services;
 
@@ -12,7 +14,8 @@ namespace EventFlow.Bookings.Application.Services;
 /// </summary>
 public class BookingService(
     IBookingRepository bookingRepository,
-    IBookingTaskQueue bookingTaskQueue) : IBookingService
+    IBookingTaskQueue bookingTaskQueue,
+    IBookingConfirmedPublisher bookingConfirmedPublisher) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
     private const int MaxActiveBookingsPerUser = 10;
@@ -80,7 +83,7 @@ public class BookingService(
             ct.ThrowIfCancellationRequested();
 
             var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
-                ?? throw new NotFoundException("Booking", bookingId);
+                ?? throw new NotFoundException("Бронирование", bookingId);
 
             return MapToDto(booking);
         }
@@ -97,7 +100,7 @@ public class BookingService(
             ct.ThrowIfCancellationRequested();
 
             var booking = await bookingRepository.GetByIdAsync(bookingId, ct)
-                ?? throw new NotFoundException("Booking", bookingId);
+                ?? throw new NotFoundException("Бронирование", bookingId);
 
             if (booking.Status != BookingStatus.Pending)
             {
@@ -106,6 +109,11 @@ public class BookingService(
 
             booking.Confirm();
             await bookingRepository.SaveChangesAsync(ct);
+
+            var message = new BookingConfirmed(booking.Id, booking.EventId, booking.UserId, 1, booking.ProcessedAt!.Value);
+
+            await bookingConfirmedPublisher.PublishAsync(message, ct);
+
             return MapToDto(booking);
         }
         catch (NotFoundException ex)
@@ -131,7 +139,7 @@ public class BookingService(
             cancellationToken.ThrowIfCancellationRequested();
 
             var booking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken)
-                ?? throw new NotFoundException("Booking", bookingId);
+                ?? throw new NotFoundException("Бронирование", bookingId);
             if (!isAdmin && booking.UserId != currentUserId)
             {
                 throw new ForbiddenOperationException("Пользователь может отменить только свою бронь");

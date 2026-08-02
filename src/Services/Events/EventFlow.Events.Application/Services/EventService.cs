@@ -38,7 +38,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
         try
         {
             var ev = await eventRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException("Event", id);
+                ?? throw new NotFoundException("Мероприятие", id);
 
             return MapToDto(ev);
         }
@@ -68,7 +68,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
         try
         {
             var existingEvent = await eventRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException("Event", id);
+                ?? throw new NotFoundException("Мероприятие", id);
 
             existingEvent.Update(
                 updatedEvent.Title,
@@ -90,7 +90,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
         try
         {
             var ev = await eventRepository.GetByIdAsync(id, ct)
-                ?? throw new NotFoundException("Event", id);
+                ?? throw new NotFoundException("Мероприятие", id);
 
             eventRepository.Remove(ev);
             await eventRepository.SaveChangesAsync(ct);

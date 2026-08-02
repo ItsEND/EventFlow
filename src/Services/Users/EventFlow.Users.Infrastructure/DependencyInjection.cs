@@ -15,7 +15,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("UserConnection")
-            ?? throw new InvalidOperationException("Connection string 'UserConnection' was not found.");
+            ?? throw new InvalidOperationException("Строка подключения 'UserConnection' не найдена.");
 
         services.AddDbContext<UsersDbContext>(options =>
             options.UseNpgsql(connectionString));
