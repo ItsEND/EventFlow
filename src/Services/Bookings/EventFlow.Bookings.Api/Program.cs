@@ -1,12 +1,28 @@
 using EventFlow.Bookings.Api.Common;
 using EventFlow.Bookings.Application;
 using EventFlow.Bookings.Infrastructure;
+using EventFlow.Bookings.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Reflection;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+
+var jwtSecret = jwtSection["Secret"]
+    ?? throw new InvalidOperationException("JWT secret was not configured.");
+
+var jwtIssuer = jwtSection["Issuer"]
+    ?? throw new InvalidOperationException("JWT issuer was not configured.");
+
+var jwtAudience = jwtSection["Audience"]
+    ?? throw new InvalidOperationException("JWT audience was not configured.");
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -28,8 +44,32 @@ builder.Services.AddControllers()
 
 builder.Services.AddProblemDetails();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+
+        ValidateLifetime = true,
+        RequireExpirationTime = true,
+
+        ClockSkew = TimeSpan.Zero,
+
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+});
 
 builder.Services.AddAuthorization();
+
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);

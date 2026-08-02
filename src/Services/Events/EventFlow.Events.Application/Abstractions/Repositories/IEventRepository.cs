@@ -1,5 +1,5 @@
 using EventFlow.Events.Domain.Models;
-using EventFlow.Events.Application.Dtos.Events;
+using EventFlow.Events.Application.Contracts.Events;
 
 namespace EventFlow.Events.Application.Abstractions.Repositories;
 

@@ -18,8 +18,10 @@
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+		<PackageReference Include="Confluent.Kafka" Version="2.15.0" />
 	</ItemGroup>
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\Shared\EventFlow.Contracts\EventFlow.Contracts.csproj" />
 		<ProjectReference Include="..\EventFlow.Bookings.Application\EventFlow.Bookings.Application.csproj" />
 		<ProjectReference Include="..\EventFlow.Bookings.Domain\EventFlow.Bookings.Domain.csproj" />
 	</ItemGroup>

@@ -1,5 +1,4 @@
 using EventFlow.Events.Api.Contracts;
-using EventFlow.Events.Api.Contracts.Booking;
 using EventFlow.Events.Api.Contracts.Events;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Application.Contracts;
@@ -14,10 +13,9 @@ namespace EventFlow.Events.Api.Controllers;
 /// Предоставляет методы для получения, создания, обновления и удаления событий.
 /// </summary>
 /// <param name="_eventService">Сервис для работы с мероприятиями.</param>
-/// <param name="_bookingService">Сервис для работы с бронированием</param>
 [ApiController]
 [Route("events")]
-public class EventController(IEventService _eventService, IBookingService _bookingService) : ControllerBase
+public class EventController(IEventService _eventService) : ControllerBase
 {
     /// <summary>
     /// Возвращает список мероприятий с учетом фильтрации и пагинации.
@@ -105,33 +103,6 @@ public class EventController(IEventService _eventService, IBookingService _booki
     {
         await _eventService.RemoveEventAsync(id);
         return NoContent();
-    }
-
-    /// <summary>
-    /// Создаёт бронь для мероприятия.
-    /// Возвращает 202 Accepted, так как обработка брони выполняется фоновым сервисом.
-    /// </summary>
-    /// <param name="id">Идентификатор мероприятия.</param>
-    /// <param name="ct">Токен отмены запроса.</param>
-    /// <returns>Созданная бронь в статусе Pending.</returns>
-    [Authorize]
-    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [HttpPost("{id:guid}/book")]
-    public async Task<ActionResult<BookingResponse>> CreateBooking(Guid id, CancellationToken ct)
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdClaim, out var userId))
-        {
-            return Unauthorized();
-        }
-
-        var booking = await _bookingService.CreateBookingAsync(id, userId, ct);
-        var response = DtoHelper.ToBookingResponse(booking);
-
-        return Accepted($"/bookings/{booking.Id}", response);
     }
 
     /// <summary>

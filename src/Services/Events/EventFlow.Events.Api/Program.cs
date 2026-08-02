@@ -44,30 +44,31 @@ builder.Services.AddControllers()
 builder.Services.AddProblemDetails();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
+        ValidateIssuerSigningKey = true,
 
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
 
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
 
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
 
-            ValidateLifetime = true,
-            RequireExpirationTime = true,
+        ValidateLifetime = true,
+        RequireExpirationTime = true,
 
-            ClockSkew = TimeSpan.Zero,
+        ClockSkew = TimeSpan.Zero,
 
-            NameClaimType = ClaimTypes.Name,
-            RoleClaimType = ClaimTypes.Role
-        };
-    });
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+});
 
 builder.Services.AddAuthorization();
+
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);

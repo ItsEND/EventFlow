@@ -1,4 +1,4 @@
-﻿namespace EventFlow.Events.Domain.Exceptions;
+﻿namespace EventFlow.Bookings.Domain.Exceptions;
 
 /// <summary>
 /// Операция запрещена для текущего пользователя.

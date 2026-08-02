@@ -43,8 +43,6 @@ public class Event
     /// </summary>
     public DateTime EndAt { get; private set; }
 
-    public ICollection<Booking> Bookings { get; private set; } = [];
-
     private Event()
     {
     } // Для EF Core

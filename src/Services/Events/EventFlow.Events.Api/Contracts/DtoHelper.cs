@@ -1,7 +1,5 @@
-using EventFlow.Events.Api.Contracts.Booking;
 using EventFlow.Events.Api.Contracts.Events;
-using EventFlow.Events.Application.Dtos.Booking;
-using EventFlow.Events.Application.Dtos.Events;
+using EventFlow.Events.Application.Contracts.Events;
 
 namespace EventFlow.Events.Api.Contracts;
 
@@ -24,20 +22,5 @@ public static class DtoHelper
         AvailableSeats = ev.AvailableSeats,
         StartAt = ev.StartAt,
         EndAt = ev.EndAt
-    };
-
-    /// <summary>
-    /// Преобразует внутреннюю модель бронирования в DTO ответа.
-    /// </summary>
-    /// <param name="booking">DTO брони из слоя Application.</param>
-    /// <returns>Объект ответа с данными брони.</returns>
-    public static BookingResponse ToBookingResponse(BookingDto booking) => new()
-    {
-        Id = booking.Id,
-        EventId = booking.EventId,
-        UserId = booking.UserId,
-        Status = booking.Status,
-        CreatedAt = booking.CreatedAt,
-        ProcessedAt = booking.ProcessedAt
     };
 }

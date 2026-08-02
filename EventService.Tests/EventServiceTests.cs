@@ -1,5 +1,5 @@
-using EventFlow.Events.Application.Dtos;
-using EventFlow.Events.Application.Dtos.Events;
+using EventFlow.Events.Application.Contracts;
+using EventFlow.Events.Application.Contracts.Events;
 using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Application.Exceptions;

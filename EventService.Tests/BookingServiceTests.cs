@@ -1,5 +1,5 @@
 using EventFlow.Events.Application.Abstractions.Services;
-using EventFlow.Events.Application.Dtos.Booking;
+using EventFlow.Events.Application.Contracts.;
 using EventFlow.Events.Application.Exceptions;
 using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Infrastructure.DataAccess;

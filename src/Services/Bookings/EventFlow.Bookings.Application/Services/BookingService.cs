@@ -12,8 +12,7 @@ namespace EventFlow.Bookings.Application.Services;
 /// </summary>
 public class BookingService(
     IBookingRepository bookingRepository,
-    IBookingTaskQueue bookingTaskQueue,
-    IBookingConfirmedPublisher publisher) : IBookingService
+    IBookingTaskQueue bookingTaskQueue) : IBookingService
 {
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
     private const int MaxActiveBookingsPerUser = 10;
@@ -102,15 +101,6 @@ public class BookingService(
 
             if (booking.Status != BookingStatus.Pending)
             {
-                return MapToDto(booking);
-            }
-
-        
-
-            if (!eventExists)
-            {
-                booking.Reject();
-                await bookingRepository.SaveChangesAsync(ct);
                 return MapToDto(booking);
             }
 
