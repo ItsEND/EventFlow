@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>EventApi.IntegrationTests</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.13.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Services\Bookings\EventFlow.Bookings.Application\EventFlow.Bookings.Application.csproj" />
+    <ProjectReference Include="..\..\src\Services\Bookings\EventFlow.Bookings.Domain\EventFlow.Bookings.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Services\Bookings\EventFlow.Bookings.Infrastructure\EventFlow.Bookings.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Services\Events\EventFlow.Events.Application\EventFlow.Events.Application.csproj" />
+    <ProjectReference Include="..\..\src\Services\Events\EventFlow.Events.Domain\EventFlow.Events.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Services\Events\EventFlow.Events.Infrastructure\EventFlow.Events.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Services\Users\EventFlow.Users.Application\EventFlow.Users.Application.csproj" />
+    <ProjectReference Include="..\..\src\Services\Users\EventFlow.Users.Domain\EventFlow.Users.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Services\Users\EventFlow.Users.Infrastructure\EventFlow.Users.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
