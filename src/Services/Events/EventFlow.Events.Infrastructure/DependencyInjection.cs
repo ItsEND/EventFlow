@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using StackExchange.Redis;
 
 namespace EventFlow.Events.Infrastructure;
 
@@ -14,11 +15,17 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("EventConnection")
+        var dbConnectionString = configuration.GetConnectionString("EventConnection")
             ?? throw new InvalidOperationException("Строка подключения 'EventConnection' не найдена.");
 
+        var cacheConnectionString = configuration.GetConnectionString("Redis")
+               ?? throw new InvalidOperationException("Строка подключения 'Redis' не найдена.");
+
         services.AddDbContext<EventDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(dbConnectionString));
+
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(cacheConnectionString));
 
         services.AddScoped<IEventRepository, EventRepository>();
 
