@@ -6,6 +6,7 @@ using EventFlow.Bookings.Infrastructure.Background;
 using EventFlow.Bookings.Infrastructure.DataAccess;
 using EventFlow.Bookings.Infrastructure.Messaging.Outbox;
 using EventFlow.Bookings.Infrastructure.Repositories;
+using EventFlow.Events.Application.Abstractions.Caching;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Infrastructure.DataAccess;
@@ -49,7 +50,8 @@ internal static class TestServiceProviderFactory
         services.AddScoped<IUserService, UserService>();
 
         services.AddSingleton<IBookingTaskQueue, InMemoryBookingTaskQueue>();
-
+        services.AddSingleton<ICacheService, NoOpCacheService>();
+        services.AddSingleton(Options.Create(new CacheOptions()));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton(
             Options.Create(new JwtOptions

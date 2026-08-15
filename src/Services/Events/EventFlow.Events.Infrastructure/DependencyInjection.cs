@@ -1,4 +1,6 @@
+using EventFlow.Events.Application.Abstractions.Caching;
 using EventFlow.Events.Application.Abstractions.Repositories;
+using EventFlow.Events.Infrastructure.Caching;
 using EventFlow.Events.Infrastructure.DataAccess;
 using EventFlow.Events.Infrastructure.Messaging;
 using EventFlow.Events.Infrastructure.Messaging.Inbox;
@@ -26,6 +28,13 @@ public static class DependencyInjection
 
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(cacheConnectionString));
+        services.AddSingleton<ICacheService, RedisCacheService>();
+        services.AddOptions<CacheOptions>()
+             .Bind(configuration.GetSection(CacheOptions.SectionName))
+             .Validate(options => options.EventTtl > TimeSpan.Zero, "EventTtl должен быть больше нуля.")
+             .Validate(options => options.TopEventsTtl > TimeSpan.Zero, "TopEventsTtl должен быть больше нуля.");
+
+
 
         services.AddScoped<IEventRepository, EventRepository>();
 

@@ -6,7 +6,8 @@ using EventFlow.Events.Application.Exceptions;
 using EventFlow.Events.Domain.Exceptions;
 using EventFlow.Events.Domain.Models;
 using System.ComponentModel.DataAnnotations;
-
+using Microsoft.Extensions.Options;
+using EventFlow.Events.Application.Abstractions.Caching;
 namespace EventFlow.Events.Application.Services;
 
 /// <summary>
@@ -14,8 +15,9 @@ namespace EventFlow.Events.Application.Services;
 /// Выполняет операции создания, получения, обновления, удаления,
 /// фильтрации и пагинации мероприятий.
 /// </summary>
-public class EventService(IEventRepository eventRepository) : IEventService
+public class EventService(IEventRepository eventRepository, ICacheService cache, IOptions<CacheOptions> options) : IEventService
 {
+    private readonly CacheOptions cacheOptions = options.Value;
     public async Task<PaginatedResult<EventDto>> GetEventsAsync(GetEventsQuery pageData, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(pageData);
@@ -35,12 +37,22 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
     public async Task<EventDto> GetEventAsync(Guid id, CancellationToken ct)
     {
+        var key = CacheKeys.Event(id);
+        var cached = await cache.GetAsync<EventDto>(key, ct);
+        if (cached is not null)
+        {
+            return cached;
+        }
+        
+
         try
         {
             var ev = await eventRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException("Мероприятие", id);
 
-            return MapToDto(ev);
+            var dto = MapToDto(ev);
+            await cache.SetAsync(key, dto, cacheOptions.EventTtl, ct);
+            return dto;
         }
         catch (NotFoundException ex)
         {
@@ -77,6 +89,8 @@ public class EventService(IEventRepository eventRepository) : IEventService
                 updatedEvent.EndAt);
 
             await eventRepository.SaveChangesAsync(ct);
+            await cache.RemoveAsync(CacheKeys.Event(id), ct);
+
             return MapToDto(existingEvent);
         }
         catch (NotFoundException ex)
@@ -94,6 +108,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
             eventRepository.Remove(ev);
             await eventRepository.SaveChangesAsync(ct);
+            await cache.RemoveAsync(CacheKeys.Event(id), ct);
         }
         catch (NotFoundException ex)
         {
