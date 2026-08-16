@@ -44,4 +44,10 @@ public interface IEventService
     /// </summary>
     /// <param name="id">Идентификатор мероприятия.</param>
     Task RemoveEventAsync(Guid id, CancellationToken ct = default);
+    /// <summary>
+    /// Возвращает список популярных мероприятий.
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns>Список популярных мероприятий.</returns>
+    Task<IReadOnlyList<EventDto>> GetTopEventsAsync(CancellationToken ct = default);
 }

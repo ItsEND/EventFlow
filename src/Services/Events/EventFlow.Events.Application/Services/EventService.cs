@@ -1,3 +1,4 @@
+using EventFlow.Events.Application.Abstractions.Caching;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Application.Contracts;
@@ -5,8 +6,8 @@ using EventFlow.Events.Application.Contracts.Events;
 using EventFlow.Events.Application.Exceptions;
 using EventFlow.Events.Domain.Exceptions;
 using EventFlow.Events.Domain.Models;
+using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
-
 namespace EventFlow.Events.Application.Services;
 
 /// <summary>
@@ -14,8 +15,10 @@ namespace EventFlow.Events.Application.Services;
 /// Выполняет операции создания, получения, обновления, удаления,
 /// фильтрации и пагинации мероприятий.
 /// </summary>
-public class EventService(IEventRepository eventRepository) : IEventService
+public class EventService(IEventRepository eventRepository, ICacheService cache, IOptions<CacheOptions> options) : IEventService
 {
+    private readonly CacheOptions cacheOptions = options.Value;
+    private const int TopEventsLimit = 10;
     public async Task<PaginatedResult<EventDto>> GetEventsAsync(GetEventsQuery pageData, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(pageData);
@@ -35,12 +38,22 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
     public async Task<EventDto> GetEventAsync(Guid id, CancellationToken ct)
     {
+        var key = CacheKeys.Event(id);
+        var cached = await cache.GetAsync<EventDto>(key, ct);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
+
         try
         {
             var ev = await eventRepository.GetByIdAsync(id, ct)
                 ?? throw new NotFoundException("Мероприятие", id);
 
-            return MapToDto(ev);
+            var dto = MapToDto(ev);
+            await cache.SetAsync(key, dto, cacheOptions.EventTtl, ct);
+            return dto;
         }
         catch (NotFoundException ex)
         {
@@ -77,6 +90,8 @@ public class EventService(IEventRepository eventRepository) : IEventService
                 updatedEvent.EndAt);
 
             await eventRepository.SaveChangesAsync(ct);
+            await cache.RemoveAsync(CacheKeys.Event(id), ct);
+
             return MapToDto(existingEvent);
         }
         catch (NotFoundException ex)
@@ -94,11 +109,27 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
             eventRepository.Remove(ev);
             await eventRepository.SaveChangesAsync(ct);
+            await cache.RemoveAsync(CacheKeys.Event(id), ct);
         }
         catch (NotFoundException ex)
         {
             throw AppException.NotFound(ex.Message, ex);
         }
+    }
+
+    public async Task<IReadOnlyList<EventDto>> GetTopEventsAsync(CancellationToken ct = default)
+    {
+        var cached = await cache.GetAsync<List<EventDto>>(CacheKeys.TopEvents, ct);
+        if (cached is not null)
+        {
+            return cached;
+        }
+        var events = await eventRepository.GetTopEventsAsync(TopEventsLimit, ct);
+        var result = events.Select(MapToDto).ToList();
+
+        await cache.SetAsync(CacheKeys.TopEvents, result, cacheOptions.TopEventsTtl, ct);
+
+        return result;
     }
 
     private static void ValidatePagination(int page, int pageSize)
@@ -129,4 +160,5 @@ public class EventService(IEventRepository eventRepository) : IEventService
         StartAt = ev.StartAt,
         EndAt = ev.EndAt
     };
+
 }

@@ -131,6 +131,57 @@ public class EventRepositoryTests : RepositoryTestBase
         Assert.Equal(["Docker Meetup", "ASP.NET Workshop"], [.. result.Items.Select(e => e.Title)]);
     }
 
+    [Fact]
+    public async Task GetTopEventsAsync_ShouldOrderBySoldPercentageAndApplyLimit()
+    {
+        var popularity = new (int TotalSeats, int SoldSeats)[]
+        {
+            (10, 9),
+            (100, 80),
+            (20, 14),
+            (1000, 600),
+            (10, 5),
+            (100, 40),
+            (4, 1),
+            (100, 20),
+            (10, 1),
+            (100, 5),
+            (100, 1),
+            (100, 0)
+        };
+
+        var events = popularity
+            .Select((seats, index) => Event.Create(
+                $"Popularity {index}",
+                description: null,
+                seats.TotalSeats,
+                Utc(2030, 1, 1, 10),
+                Utc(2030, 1, 1, 12)))
+            .ToList();
+
+        for (var index = 0; index < events.Count; index++)
+        {
+            if (popularity[index].SoldSeats > 0)
+            {
+                events[index].ReserveSeats(popularity[index].SoldSeats);
+            }
+        }
+
+        await SeedEventsAsync([.. events]);
+
+        await using var context = CreateEventsContext();
+        var repository = new EventRepository(context);
+
+        var result = await repository.GetTopEventsAsync(
+            10,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(10, result.Count);
+        Assert.Equal(
+            events.Take(10).Select(ev => ev.Id),
+            result.Select(ev => ev.Id));
+    }
+
     public static TheoryData<string?, DateTime?, DateTime?, string[]> FilterCases
     {
         get

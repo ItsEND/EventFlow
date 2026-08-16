@@ -10,4 +10,5 @@ public interface IEventRepository
     void Add(Event ev);
     void Remove(Event ev);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Event>> GetTopEventsAsync(int limit, CancellationToken cancellationToken = default);
 }

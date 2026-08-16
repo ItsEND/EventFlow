@@ -103,6 +103,18 @@ public class EventController(IEventService _eventService) : ControllerBase
         await _eventService.RemoveEventAsync(id);
         return NoContent();
     }
+    /// <summary>
+    /// Возвращает десять мероприятий с наибольшим процентом посадочных мест.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("top")]
+    public async Task<ActionResult<IReadOnlyList<EventResponse>>> GetTopEvents(CancellationToken cancellationToken)
+    {
+        var events = await _eventService.GetTopEventsAsync(cancellationToken);
+        var response = events.Select(DtoHelper.ToEventResponse).ToList();
+
+        return Ok(response);
+    }
 
     /// <summary>
     /// Преобразует постраничный результат мероприятий доменной модели

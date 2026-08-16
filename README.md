@@ -2,7 +2,7 @@
 
 EventFlow — учебная событийно-ориентированная система управления мероприятиями и бронированиями на ASP.NET Core. Монолит из предыдущих спринтов разделён на три самостоятельных микросервиса. Каждый сервис владеет своей базой PostgreSQL, а Bookings и Events обмениваются событием `BookingConfirmed` через Apache Kafka.
 
-Проект использует .NET 10, PostgreSQL, Entity Framework Core, Kafka, JWT, Docker и xUnit. Kafka работает в режиме KRaft, поэтому ZooKeeper не требуется.
+Проект использует .NET 10, PostgreSQL, Entity Framework Core, Kafka, Redis, JWT, Docker и xUnit. Kafka работает в режиме KRaft, поэтому ZooKeeper не требуется.
 
 ## Состав системы
 
@@ -12,6 +12,7 @@ EventFlow — учебная событийно-ориентированная �
 | Events API | CRUD мероприятий и учёт доступных мест | `eventflow_events` | `http://localhost:5265` |
 | Bookings API | создание, фоновое подтверждение и отмена броней | `eventflow_bookings` | `http://localhost:5176` |
 | Kafka | доставка `BookingConfirmed` и DLQ | отдельный volume | `localhost:9092` |
+| Redis | кеш событий и топ-10 популярных событий | in-memory | `localhost:6379` |
 | pgAdmin | просмотр баз данных | отдельный volume | `http://localhost:5050` |
 
 PostgreSQL доступен с хоста на следующих портах:
@@ -30,7 +31,7 @@ PostgreSQL доступен с хоста на следующих портах:
 
 - `Domain` — сущности, перечисления и бизнес-правила;
 - `Application` — сценарии использования, контракты и абстракции;
-- `Infrastructure` — EF Core, PostgreSQL, Kafka и фоновые сервисы;
+- `Infrastructure` — EF Core, PostgreSQL, Redis, Kafka и фоновые сервисы;
 - `Api` — Presentation-слой: контроллеры, HTTP-контракты, middleware и конфигурация приложения.
 
 Структура решения:
@@ -60,6 +61,45 @@ src/
 Сервисы не используют общую схему БД и не вызывают друг друга по HTTP. В брони хранятся только идентификаторы `EventId` и `UserId`. Общий проект `EventFlow.Contracts` содержит контракт `BookingConfirmed` и имена Kafka-топиков.
 
 Каждый сервис имеет собственные EF Core migrations. При старте API миграции автоматически применяются к соответствующей базе данных.
+
+## Стратегия кеширования
+
+Redis используется в Events API как необязательный ускоряющий слой. Источником истины остаётся PostgreSQL: недоступность или очистка Redis не приводит к потере данных и не должна делать API недоступным.
+
+### Событие по идентификатору
+
+Ответ `GET /events/{id}` кешируется по ключу `event:{id}` с TTL 10 минут. Для чтения используется паттерн Cache-Aside:
+
+1. Events API пытается получить `EventDto` из Redis.
+2. При попадании значение сразу возвращается клиенту, репозиторий не вызывается.
+3. При промахе событие читается из PostgreSQL, преобразуется в DTO и сохраняется в Redis с TTL.
+
+Для отдельного события выбрана инвалидация при записи. После успешного обновления или удаления в PostgreSQL ключ `event:{id}` удаляется. При создании индивидуальная инвалидация не требуется: событие получает новый идентификатор, для которого кеш ещё не мог существовать. Следующий запрос после инвалидации снова прогревает кеш актуальными данными.
+
+Порядок операций — сначала сохранение в PostgreSQL, затем удаление ключа. Поэтому сбой между операциями не ставит под угрозу источник истины. Если удалить устаревший ключ не удалось, возможная несогласованность ограничена TTL индивидуального события.
+
+### Топ-10 популярных событий
+
+Ответ `GET /events/top` кешируется по единому ключу `events:top10` с TTL 1 минута. Популярность определяется долей проданных мест:
+
+```text
+(total_seats - available_seats) / total_seats
+```
+
+Сортировка и ограничение десятью строками выполняются в PostgreSQL. Для рейтингового агрегата допустимо кратковременное устаревание, поэтому топ обновляется только по TTL. Явная инвалидация после каждого создания, изменения или бронирования создавала бы лишние обращения к Redis и почти лишила бы этот кеш пользы.
+
+### Изменения через Kafka
+
+Обработчик `BookingConfirmed` уменьшает `AvailableSeats` внутри транзакции PostgreSQL. После успешного commit он инвалидирует `event:{id}`. Кеш топа при этом не удаляется и обновится после окончания собственного короткого TTL.
+
+### Недоступность Redis
+
+`IConnectionMultiplexer` зарегистрирован в DI как Singleton и переиспользуется на протяжении жизни приложения. `AbortOnConnectFail` отключён, поэтому Events API может стартовать, когда Redis временно недоступен. Ошибки чтения, записи и удаления кеша логируются внутри Redis-реализации и не передаются клиенту: чтение деградирует до обращения в PostgreSQL.
+
+Значения TTL находятся в конфигурации отдельно для двух сценариев:
+
+- `Cache:EventTtl` — 10 минут;
+- `Cache:TopEventsTtl` — 1 минута.
 
 ## Надёжный поток BookingConfirmed
 
@@ -108,7 +148,7 @@ src/
 JWT выдаёт только Users API через `POST /auth/login`. Все три API используют одинаковые значения секрета, издателя и аудитории.
 
 - `POST /auth/register` и `POST /auth/login` доступны без токена;
-- `GET /events` и `GET /events/{id}` доступны без токена;
+- `GET /events`, `GET /events/{id}` и `GET /events/top` доступны без токена;
 - создание, изменение и удаление мероприятий разрешено только роли `Admin`;
 - все endpoints Bookings требуют JWT;
 - Bookings читает `UserId` из claim `NameIdentifier`;
@@ -129,7 +169,7 @@ Swagger каждого сервиса поддерживает JWT. В окне 
 docker compose up --build -d
 ```
 
-Compose соберёт Dockerfile каждого API и запустит три базы PostgreSQL, Kafka в режиме KRaft, три API и pgAdmin. API стартуют после успешных healthcheck зависимых компонентов.
+Compose соберёт Dockerfile каждого API и запустит три базы PostgreSQL, Kafka в режиме KRaft, Redis, три API и pgAdmin. API стартуют после успешных healthcheck зависимых компонентов.
 
 Swagger будет доступен по адресам:
 
@@ -143,8 +183,8 @@ Swagger будет доступен по адресам:
 # состояние контейнеров
 docker compose ps
 
-# логи сервисов и Kafka
-docker compose logs -f users-api events-api bookings-api kafka
+# логи сервисов, Kafka и Redis
+docker compose logs -f users-api events-api bookings-api kafka redis
 
 # остановка с сохранением данных
 docker compose down
@@ -247,6 +287,7 @@ GET http://localhost:5265/events/<eventId>
 |---|---|---|
 | `GET` | `/events` | публичный |
 | `GET` | `/events/{id}` | публичный |
+| `GET` | `/events/top` | публичный |
 | `POST` | `/events` | `Admin` |
 | `PUT` | `/events/{id}` | `Admin` |
 | `DELETE` | `/events/{id}` | `Admin` |
@@ -270,6 +311,9 @@ GET http://localhost:5265/events/<eventId>
 | `ConnectionStrings__BookingConnection` | база Bookings |
 | `Kafka__BootstrapServers` | адрес Kafka |
 | `Kafka__ConsumerGroup` | consumer group Events |
+| `Redis__ConnectionString` | подключение Events API к Redis |
+| `Cache__EventTtl` | TTL события по идентификатору |
+| `Cache__TopEventsTtl` | TTL топ-10 популярных событий |
 | `Jwt__Secret` | общий ключ подписи JWT |
 | `Jwt__Issuer` | издатель JWT |
 | `Jwt__Audience` | аудитория JWT |
@@ -282,7 +326,7 @@ GET http://localhost:5265/events/<eventId>
 Для запуска API вне контейнеров сначала поднимите инфраструктуру:
 
 ```bash
-docker compose up -d users-db events-db bookings-db kafka
+docker compose up -d users-db events-db bookings-db kafka redis
 ```
 
 Затем запустите API в отдельных терминалах:
@@ -313,4 +357,4 @@ dotnet test Tests/EventFlow.Tests/EventFlow.Tests.csproj
 dotnet test Tests/EventApi.IntegrationTests/EventApi.IntegrationTests.csproj
 ```
 
-Тесты проверяют основные сценарии сервисов, создание Outbox-сообщения, атомарность подтверждения брони и Outbox, а также идемпотентную обработку повторных `BookingConfirmed` через Inbox.
+Тесты проверяют основные сценарии сервисов, попадание и промах кеша, TTL, инвалидацию после изменения события, сортировку топа по проценту проданных мест, создание Outbox-сообщения, атомарность подтверждения брони и Outbox, а также идемпотентную обработку повторных `BookingConfirmed` через Inbox.

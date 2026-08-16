@@ -1,5 +1,6 @@
 ﻿using EventApi.IntegrationTests.Infrastructure;
 using EventFlow.Contracts;
+using EventFlow.Events.Application.Abstractions.Caching;
 using EventFlow.Events.Domain.Models;
 using EventFlow.Events.Infrastructure.Messaging.Inbox;
 using Microsoft.EntityFrameworkCore;
@@ -40,9 +41,10 @@ public sealed class BookingConfirmedInboxHandlerTests
             SeatCount: 1,
             ConfirmedAt: DateTime.UtcNow);
 
+        var cache = new RecordingCacheService();
         await using (var firstContext = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(firstContext,
+            var handler = new BookingConfirmedInboxHandler(firstContext, cache,
                 NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
@@ -50,7 +52,7 @@ public sealed class BookingConfirmedInboxHandlerTests
 
         await using (var secondContext = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(secondContext,
+            var handler = new BookingConfirmedInboxHandler(secondContext, cache,
                 NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
@@ -72,9 +74,9 @@ public sealed class BookingConfirmedInboxHandlerTests
 
         Assert.NotNull(inboxMessage.ProcessedAt);
 
-        Assert.Single(await verifyContext.InboxMessages
-                .AsNoTracking()
-                .ToListAsync(ct));
+        Assert.Single(await verifyContext.InboxMessages.AsNoTracking().ToListAsync(ct));
+
+        Assert.Contains(CacheKeys.Event(ev.Id), cache.RemovedKeys);
     }
     [Fact]
     public async Task HandleAsync_WhenEventDoesNotExist_ShouldMarkMessageIgnored()
@@ -88,11 +90,11 @@ public sealed class BookingConfirmedInboxHandlerTests
             UserId: Guid.NewGuid(),
             SeatCount: 1,
             ConfirmedAt: DateTime.UtcNow);
-
+        var cache = new RecordingCacheService();
         await using (var context = CreateEventsContext())
         {
             var handler = new BookingConfirmedInboxHandler(
-                context,
+                context, cache,
                 NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
@@ -140,10 +142,11 @@ public sealed class BookingConfirmedInboxHandlerTests
             SeatCount: 2,
             ConfirmedAt: DateTime.UtcNow);
 
+        var cache = new RecordingCacheService();
         await using (var context = CreateEventsContext())
         {
             var handler = new BookingConfirmedInboxHandler(
-                context,
+                context, cache,
                 NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
