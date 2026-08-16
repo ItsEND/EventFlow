@@ -20,15 +20,25 @@ public static class DependencyInjection
         var dbConnectionString = configuration.GetConnectionString("EventConnection")
             ?? throw new InvalidOperationException("Строка подключения 'EventConnection' не найдена.");
 
-        var cacheConnectionString = configuration.GetConnectionString("Redis")
-               ?? throw new InvalidOperationException("Строка подключения 'Redis' не найдена.");
+        var redisConnectionString = configuration["Redis:ConnectionString"];
+        if (string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            throw new InvalidOperationException(
+                "Строка подключения 'Redis:ConnectionString' не найдена.");
+        }
 
         services.AddDbContext<EventDbContext>(options =>
             options.UseNpgsql(dbConnectionString));
 
         services.AddSingleton<IConnectionMultiplexer>(_ =>
-            ConnectionMultiplexer.Connect(cacheConnectionString));
+        {
+            var redisConfiguration = ConfigurationOptions.Parse(redisConnectionString);
+            redisConfiguration.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(redisConfiguration);
+
+        });
         services.AddSingleton<ICacheService, RedisCacheService>();
+
         services.AddOptions<CacheOptions>()
              .Bind(configuration.GetSection(CacheOptions.SectionName))
              .Validate(options => options.EventTtl > TimeSpan.Zero, "EventTtl должен быть больше нуля.")

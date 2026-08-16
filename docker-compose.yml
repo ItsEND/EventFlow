@@ -135,6 +135,7 @@ services:
       ConnectionStrings__EventConnection: Host=events-db;Port=5432;Database=eventflow_events;Username=postgres;Password=postgres
       Kafka__BootstrapServers: kafka:29092
       Kafka__ConsumerGroup: eventflow-events
+      Redis__ConnectionString: "redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000,connectRetry=3"
     ports:
       - "5265:8080"
     depends_on:

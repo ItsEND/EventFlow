@@ -55,4 +55,17 @@ public class EventRepository(EventDbContext db) : IEventRepository
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => db.SaveChangesAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Event>> GetTopEventsAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+
+
+        return await db.Events.AsNoTracking()
+            .OrderByDescending(ev => (decimal) (ev.TotalSeats - ev.AvailableSeats) / ev.TotalSeats)
+            .ThenByDescending(ev => ev.TotalSeats - ev.AvailableSeats)
+            .ThenBy(ev => ev.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
 }
