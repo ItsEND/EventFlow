@@ -18,6 +18,7 @@ namespace EventFlow.Events.Application.Services;
 public class EventService(IEventRepository eventRepository, ICacheService cache, IOptions<CacheOptions> options) : IEventService
 {
     private readonly CacheOptions cacheOptions = options.Value;
+    private const int TopEventsLimit = 10;
     public async Task<PaginatedResult<EventDto>> GetEventsAsync(GetEventsQuery pageData, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(pageData);
@@ -116,6 +117,21 @@ public class EventService(IEventRepository eventRepository, ICacheService cache,
         }
     }
 
+    public async Task<IReadOnlyList<EventDto>> GetTopEventsAsync(CancellationToken ct = default)
+    {
+        var cached = await cache.GetAsync<List<EventDto>>(CacheKeys.TopEvents, ct);
+        if (cached is not null)
+        {
+            return cached;
+        }
+        var events = await eventRepository.GetTopEventsAsync(TopEventsLimit, ct);
+        var result = events.Select(MapToDto).ToList();
+
+        await cache.SetAsync(CacheKeys.TopEvents, result, cacheOptions.TopEventsTtl, ct);
+        
+        return result;
+    }
+
     private static void ValidatePagination(int page, int pageSize)
     {
         if (page < 1)
@@ -144,4 +160,5 @@ public class EventService(IEventRepository eventRepository, ICacheService cache,
         StartAt = ev.StartAt,
         EndAt = ev.EndAt
     };
+
 }

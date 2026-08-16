@@ -29,6 +29,11 @@ public sealed class RedisCacheService(IConnectionMultiplexer connection, ILogger
             logger.LogWarning(ex, "В Redis находится некорректное значение по ключу {CacheKey}", cacheKey);
             return null;
         }
+        catch(NotSupportedException ex)
+        {
+            logger.LogWarning(ex, "Не удалось сериализовать или десериализовать кеш по ключу {CacheKey}", cacheKey);
+            return null;
+        }
     }
 
 
