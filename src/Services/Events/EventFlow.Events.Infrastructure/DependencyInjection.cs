@@ -42,7 +42,8 @@ public static class DependencyInjection
         services.AddOptions<CacheOptions>()
              .Bind(configuration.GetSection(CacheOptions.SectionName))
              .Validate(options => options.EventTtl > TimeSpan.Zero, "EventTtl должен быть больше нуля.")
-             .Validate(options => options.TopEventsTtl > TimeSpan.Zero, "TopEventsTtl должен быть больше нуля.");
+             .Validate(options => options.TopEventsTtl > TimeSpan.Zero, "TopEventsTtl должен быть больше нуля.")
+             .ValidateOnStart();
 
 
 

@@ -1,6 +1,6 @@
 ﻿using EventFlow.Contracts;
-using EventFlow.Events.Infrastructure.DataAccess;
 using EventFlow.Events.Application.Abstractions.Caching;
+using EventFlow.Events.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -45,7 +45,7 @@ public sealed class BookingConfirmedInboxHandler(EventDbContext dbContext, ICach
                 inboxMessage.MarkIgnored(InboxMessageStatus.IgnoredEventNotFound, $"Мероприятие {message.EventId} не найдено.", DateTime.UtcNow);
 
                 await SaveAndCommitAsync(transaction, cancellationToken);
-                
+
                 logger.LogWarning(
                     "Сообщение {MessageId} пропущено: " +
                     "мероприятие {EventId} не найдено.",
@@ -78,7 +78,7 @@ public sealed class BookingConfirmedInboxHandler(EventDbContext dbContext, ICach
 
             await SaveAndCommitAsync(transaction, cancellationToken);
             await cache.RemoveAsync(CacheKeys.Event(message.EventId), CancellationToken.None);
-            
+
             logger.LogInformation(
                 "Сообщение {MessageId} обработано. " +
                 "Для мероприятия {EventId} зарезервировано мест: {SeatCount}.",

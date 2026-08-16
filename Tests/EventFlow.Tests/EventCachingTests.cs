@@ -116,4 +116,128 @@ public class EventCachingTests
             _ = cache.RemoveAsync(CacheKeys.Event(entity.Id), ct);
         });
     }
+
+    [Fact]
+    public async Task RemoveEventAsync_AfterSaving_RemovesEventCache()
+    {
+        var repository = Substitute.For<IEventRepository>();
+        var cache = Substitute.For<ICacheService>();
+
+        var entity = Event.Create(
+            "Event to delete",
+            null,
+            20,
+            DateTime.UtcNow.AddDays(1),
+            DateTime.UtcNow.AddDays(2));
+
+        var ct = CancellationToken.None;
+
+        repository.GetByIdAsync(entity.Id, ct)
+            .Returns(Task.FromResult<Event?>(entity));
+
+        var service = new EventService(
+            repository,
+            cache,
+            Options.Create(new CacheOptions()));
+
+        await service.RemoveEventAsync(entity.Id, ct);
+
+        repository.Received(1).Remove(entity);
+
+        Received.InOrder(() =>
+        {
+            repository.Remove(entity);
+            _ = repository.SaveChangesAsync(ct);
+            _ = cache.RemoveAsync(CacheKeys.Event(entity.Id), ct);
+        });
+    }
+
+    [Fact]
+    public async Task GetTopEventsAsync_WhenCacheHit_DoesNotCallRepository()
+    {
+        var repository = Substitute.For<IEventRepository>();
+        var cache = Substitute.For<ICacheService>();
+
+        var cached = new List<EventDto>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Popular cached event",
+                Description = null,
+                TotalSeats = 100,
+                AvailableSeats = 10,
+                StartAt = DateTime.UtcNow.AddDays(1),
+                EndAt = DateTime.UtcNow.AddDays(2)
+            }
+        };
+
+        var ct = CancellationToken.None;
+
+        cache.GetAsync<List<EventDto>>(CacheKeys.TopEvents, ct)
+            .Returns(Task.FromResult<List<EventDto>?>(cached));
+
+        var service = new EventService(
+            repository,
+            cache,
+            Options.Create(new CacheOptions()));
+
+        var result = await service.GetTopEventsAsync(ct);
+
+        Assert.Same(cached, result);
+
+        await repository.DidNotReceive()
+            .GetTopEventsAsync(
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetTopEventsAsync_WhenCacheMiss_ReadsRepositoryAndFillsCache()
+    {
+        var repository = Substitute.For<IEventRepository>();
+        var cache = Substitute.For<ICacheService>();
+
+        var events = new List<Event>
+        {
+            Event.Create(
+                "Popular database event",
+                null,
+                100,
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(2))
+        };
+
+        var ct = CancellationToken.None;
+        var topEventsTtl = TimeSpan.FromMinutes(1);
+
+        cache.GetAsync<List<EventDto>>(CacheKeys.TopEvents, ct)
+            .Returns(Task.FromResult<List<EventDto>?>(null));
+
+        repository.GetTopEventsAsync(10, ct)
+            .Returns(Task.FromResult<IReadOnlyList<Event>>(events));
+
+        var service = new EventService(
+            repository,
+            cache,
+            Options.Create(new CacheOptions
+            {
+                EventTtl = TimeSpan.FromMinutes(10),
+                TopEventsTtl = topEventsTtl
+            }));
+
+        var result = await service.GetTopEventsAsync(ct);
+
+        Assert.Single(result);
+        Assert.Equal(events[0].Id, result[0].Id);
+
+        await repository.Received(1).GetTopEventsAsync(10, ct);
+
+        await cache.Received(1).SetAsync(
+            CacheKeys.TopEvents,
+            Arg.Is<List<EventDto>>(items =>
+                items.Count == 1 && items[0].Id == events[0].Id),
+            topEventsTtl,
+            ct);
+    }
 }

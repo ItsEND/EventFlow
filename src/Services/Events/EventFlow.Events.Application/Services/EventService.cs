@@ -1,3 +1,4 @@
+using EventFlow.Events.Application.Abstractions.Caching;
 using EventFlow.Events.Application.Abstractions.Repositories;
 using EventFlow.Events.Application.Abstractions.Services;
 using EventFlow.Events.Application.Contracts;
@@ -5,9 +6,8 @@ using EventFlow.Events.Application.Contracts.Events;
 using EventFlow.Events.Application.Exceptions;
 using EventFlow.Events.Domain.Exceptions;
 using EventFlow.Events.Domain.Models;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Options;
-using EventFlow.Events.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 namespace EventFlow.Events.Application.Services;
 
 /// <summary>
@@ -44,7 +44,7 @@ public class EventService(IEventRepository eventRepository, ICacheService cache,
         {
             return cached;
         }
-        
+
 
         try
         {
@@ -128,7 +128,7 @@ public class EventService(IEventRepository eventRepository, ICacheService cache,
         var result = events.Select(MapToDto).ToList();
 
         await cache.SetAsync(CacheKeys.TopEvents, result, cacheOptions.TopEventsTtl, ct);
-        
+
         return result;
     }
 

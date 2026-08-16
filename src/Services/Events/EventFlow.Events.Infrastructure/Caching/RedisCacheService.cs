@@ -8,6 +8,7 @@ namespace EventFlow.Events.Infrastructure.Caching;
 public sealed class RedisCacheService(IConnectionMultiplexer connection, ILogger<RedisCacheService> logger) : ICacheService
 {
     private readonly IDatabase _redis = connection.GetDatabase();
+
     public async Task<T?> GetAsync<T>(string cacheKey, CancellationToken cancellationToken = default)
         where T : class
     {
@@ -15,27 +16,26 @@ public sealed class RedisCacheService(IConnectionMultiplexer connection, ILogger
         try
         {
             var value = await _redis.StringGetAsync(cacheKey);
-            return value.HasValue 
-                ? JsonSerializer.Deserialize<T>(value.ToString()) 
+            return value.HasValue
+                ? JsonSerializer.Deserialize<T>(value.ToString())
                 : null;
         }
-        catch(RedisException ex)
+        catch (RedisException ex)
         {
             logger.LogWarning(ex, "Не удалось получить значение из Redis по ключу {CacheKey}", cacheKey);
             return null;
         }
-        catch(JsonException ex)
+        catch (JsonException ex)
         {
             logger.LogWarning(ex, "В Redis находится некорректное значение по ключу {CacheKey}", cacheKey);
             return null;
         }
-        catch(NotSupportedException ex)
+        catch (NotSupportedException ex)
         {
             logger.LogWarning(ex, "Не удалось сериализовать или десериализовать кеш по ключу {CacheKey}", cacheKey);
             return null;
         }
     }
-
 
     public async Task SetAsync<T>(string cacheKey, T value, TimeSpan expiration, CancellationToken cancellationToken = default)
         where T : class
@@ -54,7 +54,11 @@ public sealed class RedisCacheService(IConnectionMultiplexer connection, ILogger
         catch (JsonException ex)
         {
             logger.LogWarning(ex, "В Redis находится некорректное значение по ключу {CacheKey}", cacheKey);
-            
+
+        }
+        catch (NotSupportedException ex)
+        {
+            logger.LogWarning(ex, "Не удалось сериализовать кеш по ключу {CacheKey}", cacheKey);
         }
     }
     public async Task RemoveAsync(string cacheKey, CancellationToken cancellationToken = default)

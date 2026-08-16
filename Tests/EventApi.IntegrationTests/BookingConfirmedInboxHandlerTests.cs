@@ -75,7 +75,7 @@ public sealed class BookingConfirmedInboxHandlerTests
         Assert.NotNull(inboxMessage.ProcessedAt);
 
         Assert.Single(await verifyContext.InboxMessages.AsNoTracking().ToListAsync(ct));
-        
+
         Assert.Contains(CacheKeys.Event(ev.Id), cache.RemovedKeys);
     }
     [Fact]

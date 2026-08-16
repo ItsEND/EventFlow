@@ -1,14 +1,11 @@
 ﻿using EventFlow.Events.Application.Abstractions.Caching;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EventApi.IntegrationTests.Infrastructure;
 
 internal class RecordingCacheService : ICacheService
 {
     public List<string> RemovedKeys { get; } = [];
-    
+
     public Task<T?> GetAsync<T>(string cacheKey, CancellationToken cancellationToken = default) where T : class
     {
         return Task.FromResult<T?>(null);
@@ -25,5 +22,5 @@ internal class RecordingCacheService : ICacheService
         return Task.CompletedTask;
     }
 
-    
+
 }
