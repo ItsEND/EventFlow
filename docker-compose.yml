@@ -136,6 +136,7 @@ services:
       Kafka__BootstrapServers: kafka:29092
       Kafka__ConsumerGroup: eventflow-events
       Redis__ConnectionString: "redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000,connectRetry=3"
+      Otlp__Endpoint: http://jaeger:4317
     ports:
       - "5265:8080"
     depends_on:
@@ -163,7 +164,13 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
+  prometheus:
+    image: prom/prometheus:v3.13.2
+    container_name: eventapi-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml 
+    ports:
+      - "9090:9090"
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: eventflow-pgadmin
