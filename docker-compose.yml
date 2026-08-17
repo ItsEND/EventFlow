@@ -9,6 +9,13 @@ x-jwt-environment: &jwt-environment
   Jwt__Audience: EventFlow.Client
   Jwt__LifetimeMinutes: "60"
 
+x-otel-environment: &otel-environment
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_BSP_SCHEDULE_DELAY: "2000"
+  OTEL_BSP_EXPORT_TIMEOUT: "3000"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=eventflow,deployment.environment.name=development"
+
 services:
   users-db:
     image: postgres:16-alpine
@@ -105,6 +112,24 @@ services:
       timeout: 5s
       retries: 10
 
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
+    container_name: eventflow-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+  grafana:
+    image: grafana/grafana:13.1.3
+    container_name: eventapi-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+
   users-api:
     build:
       context: .
@@ -112,7 +137,8 @@ services:
     container_name: eventflow-users-api
     restart: unless-stopped
     environment:
-      <<: *jwt-environment
+      <<: [*jwt-environment, *otel-environment]
+      OTEL_SERVICE_NAME: users-service
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__UserConnection: Host=users-db;Port=5432;Database=eventflow_users;Username=postgres;Password=postgres
@@ -129,14 +155,14 @@ services:
     container_name: eventflow-events-api
     restart: unless-stopped
     environment:
-      <<: *jwt-environment
+      <<: [*jwt-environment, *otel-environment]
+      OTEL_SERVICE_NAME: events-service
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__EventConnection: Host=events-db;Port=5432;Database=eventflow_events;Username=postgres;Password=postgres
       Kafka__BootstrapServers: kafka:29092
       Kafka__ConsumerGroup: eventflow-events
       Redis__ConnectionString: "redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000,connectRetry=3"
-      Otlp__Endpoint: http://jaeger:4317
     ports:
       - "5265:8080"
     depends_on:
@@ -152,7 +178,8 @@ services:
     container_name: eventflow-bookings-api
     restart: unless-stopped
     environment:
-      <<: *jwt-environment
+      <<: [*jwt-environment, *otel-environment]
+      OTEL_SERVICE_NAME: bookings-service
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__BookingConnection: Host=bookings-db;Port=5432;Database=eventflow_bookings;Username=postgres;Password=postgres
@@ -196,3 +223,4 @@ volumes:
   bookings-db-data:
   kafka-data:
   pgadmin-data:
+  grafana-data: 

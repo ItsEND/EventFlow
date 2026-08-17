@@ -75,12 +75,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddAuthorization();
 
 builder.Services.AddOpenTelemetry()
-    .ConfigureResource(r => r.AddService(serviceName: "users-service"))
     .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
+         .AddAspNetCoreInstrumentation(options =>
+         {
+             options.Filter = httpContext =>
+             {
+                 var path = httpContext.Request.Path;
+                 return !path.StartsWithSegments("/metrics") &&
+                        !path.StartsWithSegments("/health");
+             };
+         })
         .AddHttpClientInstrumentation()
-        .AddEntityFrameworkCoreInstrumentation())
-//        .AddOtlpExporter(o => o.Endpoint = new Uri(configuration["Otlp:Endpoint"]!))
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddOtlpExporter())
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddRuntimeInstrumentation()
