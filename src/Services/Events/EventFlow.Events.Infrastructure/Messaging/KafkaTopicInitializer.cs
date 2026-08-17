@@ -24,7 +24,21 @@ public sealed class KafkaTopicInitializer(IOptions<KafkaOptions> options, ILogge
             BootstrapServers = _options.BootstrapServers,
         };
 
-        using var adminClient = new AdminClientBuilder(adminConfig).Build();
+        using var adminClient = new AdminClientBuilder(adminConfig)
+            .SetErrorHandler((_, error) =>
+                logger.Log(
+                    error.IsFatal ? LogLevel.Critical : LogLevel.Warning,
+                    "Ошибка Kafka AdminClient {Code}: {Reason}",
+                    error.Code,
+                    error.Reason))
+            .SetLogHandler((_, message) =>
+                logger.Log(
+                    MapKafkaLogLevel(message.Level),
+                    "Kafka AdminClient {KafkaLevel} {Facility}: {Message}",
+                    message.Level,
+                    message.Facility,
+                    message.Message))
+            .Build();
 
         await EnsureTopicExistsAsync(adminClient, KafkaTopics.BookingConfirmed);
 
@@ -63,5 +77,17 @@ public sealed class KafkaTopicInitializer(IOptions<KafkaOptions> options, ILogge
     {
         return Task.CompletedTask;
     }
+
+    private static LogLevel MapKafkaLogLevel(SyslogLevel level) => level switch
+    {
+        SyslogLevel.Emergency or
+        SyslogLevel.Alert or
+        SyslogLevel.Critical => LogLevel.Critical,
+        SyslogLevel.Error => LogLevel.Error,
+        SyslogLevel.Warning => LogLevel.Warning,
+        SyslogLevel.Notice or SyslogLevel.Info => LogLevel.Information,
+        SyslogLevel.Debug => LogLevel.Debug,
+        _ => LogLevel.Information
+    };
 }
 
