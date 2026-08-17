@@ -62,6 +62,7 @@ public class EventRepository(EventDbContext db) : IEventRepository
 
 
         return await db.Events.AsNoTracking()
+            .Where(ev => ev.TotalSeats > 0)
             .OrderByDescending(ev => (decimal)(ev.TotalSeats - ev.AvailableSeats) / ev.TotalSeats)
             .ThenByDescending(ev => ev.TotalSeats - ev.AvailableSeats)
             .ThenBy(ev => ev.Id)

@@ -37,8 +37,37 @@ public sealed class BookingConfirmedConsumer(IServiceScopeFactory scopeFactory, 
             Acks = Acks.All,
             EnableIdempotence = true
         };
-        using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
-        using var deadLetterProducer = new ProducerBuilder<string, string>(deadLetterProducerConfig).Build();
+        using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
+            .SetErrorHandler((_, error) =>
+                logger.Log(
+                    error.IsFatal ? LogLevel.Critical : LogLevel.Warning,
+                    "Ошибка Kafka consumer {Code}: {Reason}",
+                    error.Code,
+                    error.Reason))
+            .SetLogHandler((_, message) =>
+                logger.Log(
+                    MapKafkaLogLevel(message.Level),
+                    "Kafka consumer {KafkaLevel} {Facility}: {Message}",
+                    message.Level,
+                    message.Facility,
+                    message.Message))
+            .Build();
+
+        using var deadLetterProducer = new ProducerBuilder<string, string>(deadLetterProducerConfig)
+            .SetErrorHandler((_, error) =>
+                logger.Log(
+                    error.IsFatal ? LogLevel.Critical : LogLevel.Warning,
+                    "Ошибка Kafka DLQ producer {Code}: {Reason}",
+                    error.Code,
+                    error.Reason))
+            .SetLogHandler((_, message) =>
+                logger.Log(
+                    MapKafkaLogLevel(message.Level),
+                    "Kafka DLQ producer {KafkaLevel} {Facility}: {Message}",
+                    message.Level,
+                    message.Facility,
+                    message.Message))
+            .Build();
 
         consumer.Subscribe(KafkaTopics.BookingConfirmed);
 
@@ -267,4 +296,16 @@ public sealed class BookingConfirmedConsumer(IServiceScopeFactory scopeFactory, 
     {
         return Encoding.UTF8.GetBytes(value);
     }
+
+    private static LogLevel MapKafkaLogLevel(SyslogLevel level) => level switch
+    {
+        SyslogLevel.Emergency or
+        SyslogLevel.Alert or
+        SyslogLevel.Critical => LogLevel.Critical,
+        SyslogLevel.Error => LogLevel.Error,
+        SyslogLevel.Warning => LogLevel.Warning,
+        SyslogLevel.Notice or SyslogLevel.Info => LogLevel.Information,
+        SyslogLevel.Debug => LogLevel.Debug,
+        _ => LogLevel.Information
+    };
 }

@@ -169,7 +169,7 @@ Swagger каждого сервиса поддерживает JWT. В окне 
 docker compose up --build -d
 ```
 
-Compose соберёт Dockerfile каждого API и запустит три базы PostgreSQL, Kafka в режиме KRaft, Redis, три API и pgAdmin. API стартуют после успешных healthcheck зависимых компонентов.
+Compose соберёт Dockerfile каждого API и запустит три базы PostgreSQL, Kafka в режиме KRaft, Redis, три API, pgAdmin, Prometheus, Jaeger и Grafana. API стартуют после успешных healthcheck обязательных зависимостей.
 
 Swagger будет доступен по адресам:
 
@@ -192,6 +192,58 @@ docker compose down
 # остановка и удаление локальных данных
 docker compose down -v
 ```
+
+## Наблюдаемость
+
+Во всех трёх API подключён OpenTelemetry SDK:
+
+- ASP.NET Core instrumentation собирает входящие HTTP-трейсы и метрики запросов;
+- HttpClient instrumentation собирает исходящие HTTP-трейсы;
+- Entity Framework Core instrumentation добавляет SQL-спаны;
+- Runtime instrumentation публикует метрики .NET, включая GC, исключения и thread pool;
+- трейсы экспортируются по OTLP/gRPC в Jaeger;
+- метрики публикуются в формате Prometheus;
+- Serilog выводит логи приложений и Kafka-клиентов в структурированном JSON-формате.
+
+### Адреса и порты
+
+| Компонент | Адрес | Назначение |
+|---|---|---|
+| Prometheus | `http://localhost:9090` | запросы метрик и состояние scrape targets |
+| Jaeger | `http://localhost:16686` | поиск распределённых трейсов |
+| Grafana | `http://localhost:3000` | дашборд технических метрик |
+| Jaeger OTLP gRPC | `localhost:4317` | приём трейсов от API |
+| Jaeger OTLP HTTP | `localhost:4318` | дополнительный OTLP endpoint |
+
+Учётные данные Grafana для локального окружения: `admin` / `admin`.
+
+Метрики сервисов доступны напрямую:
+
+| Сервис | Endpoint метрик |
+|---|---|
+| Users API | `http://localhost:5056/metrics` |
+| Events API | `http://localhost:5265/metrics` |
+| Bookings API | `http://localhost:5176/metrics` |
+
+Prometheus собирает все три endpoint каждые 15 секунд. Состояние можно проверить в `Status → Targets`: jobs `users-service`, `events-service` и `bookings-service` должны иметь статус `UP`.
+
+### Grafana provisioning
+
+Источник данных и дашборд создаются автоматически при запуске Compose:
+
+- datasource: `grafana/provisioning/datasources/prometheus.yml`;
+- dashboard provider: `grafana/provisioning/dashboards/dashboards.yml`;
+- dashboard: `grafana/dashboards/eventflow-observability.json`.
+
+Дашборд `EventFlow Observability` содержит latency p50/p95/p99, throughput, error rate, active HTTP requests, количество исключений, метрики GC и thread pool. После отправки нескольких запросов к API выберите диапазон `Last 15 minutes` и нужное значение переменной `service`.
+
+Чтобы увидеть JSON-логи приложений без служебных префиксов Docker Compose, выполните:
+
+```bash
+docker compose logs --no-color --no-log-prefix --tail 100 users-api events-api bookings-api
+```
+
+Для проверки трейсов выполните несколько запросов к API, затем откройте Jaeger и выберите `users-service`, `events-service` или `bookings-service`. HTTP-запросы отображаются серверными спанами, обращения через EF Core — SQL-спанами.
 
 ## Проверка сквозного сценария
 
