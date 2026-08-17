@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "EventFlow",
+  "classifications": [
+    "Web",
+    "Architecture",
+    "Distributed Systems"
+  ],
+  "identity": "EventFlow.Platform.Templates.Solution",
+  "name": "EventFlow Platform Solution",
+  "shortName": "platform-sln",
+  "description": "Создаёт .NET-решение с общими блоками авторизации, API, наблюдаемости, Redis и Kafka.",
+  "sourceName": "PlatformTemplate",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  }
+}

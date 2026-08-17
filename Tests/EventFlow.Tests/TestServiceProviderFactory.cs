@@ -33,12 +33,9 @@ internal static class TestServiceProviderFactory
 
         services.AddLogging();
 
-        services.AddDbContext<EventDbContext>(options =>
-            options.UseInMemoryDatabase($"events-{testId}"));
-        services.AddDbContext<BookingDbContext>(options =>
-            options.UseInMemoryDatabase($"bookings-{testId}"));
-        services.AddDbContext<UsersDbContext>(options =>
-            options.UseInMemoryDatabase($"users-{testId}"));
+        services.AddDbContext<EventDbContext>(options => options.UseInMemoryDatabase($"events-{testId}"));
+        services.AddDbContext<BookingDbContext>(options => options.UseInMemoryDatabase($"bookings-{testId}"));
+        services.AddDbContext<UsersDbContext>(options => options.UseInMemoryDatabase($"users-{testId}"));
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();

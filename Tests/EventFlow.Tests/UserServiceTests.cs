@@ -56,8 +56,7 @@ public class UserServiceTests : IDisposable
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
         await userService.RegisterAsync(Registration("alex", "first-password"), ct);
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
-            userService.RegisterAsync(Registration("alex", "second-password"), ct));
+        await Assert.ThrowsAsync<ValidationException>(() => userService.RegisterAsync(Registration("alex", "second-password"), ct));
     }
 
     [Fact]
@@ -77,17 +76,14 @@ public class UserServiceTests : IDisposable
     [Theory]
     [InlineData("alex", "incorrect-password")]
     [InlineData("missing-user", "some-password")]
-    public async Task LoginAsync_ShouldThrowInvalidCredentials_WhenCredentialsAreInvalid(
-        string login,
-        string password)
+    public async Task LoginAsync_ShouldThrowInvalidCredentials_WhenCredentialsAreInvalid(string login, string password)
     {
         var ct = TestContext.Current.CancellationToken;
         await using var scope = _provider.CreateAsyncScope();
         var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
         await userService.RegisterAsync(Registration("alex", "correct-password"), ct);
 
-        var exception = await Assert.ThrowsAsync<UserException>(() =>
-            userService.LoginAsync(login, password, ct));
+        var exception = await Assert.ThrowsAsync<UserException>(() => userService.LoginAsync(login, password, ct));
 
         Assert.Equal(UserErrorCode.InvalidCredentials, exception.Code);
         Assert.Equal("Неверный логин или пароль.", exception.Message);

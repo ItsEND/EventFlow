@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);1591</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference
+			Include="..\PlatformTemplate.ServiceName.Application\PlatformTemplate.ServiceName.Application.csproj" />
+		<ProjectReference
+			Include="..\PlatformTemplate.ServiceName.Infrastructure\PlatformTemplate.ServiceName.Infrastructure.csproj" />
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Api\PlatformTemplate.BuildingBlocks.Api.csproj" />
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Authentication\PlatformTemplate.BuildingBlocks.Authentication.csproj" />
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Observability\PlatformTemplate.BuildingBlocks.Observability.csproj" />
+	</ItemGroup>
+
+</Project>

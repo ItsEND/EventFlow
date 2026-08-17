@@ -27,10 +27,7 @@ public class BookingServiceTests : IDisposable
         await using var scope = _provider.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
-        var booking = await service.CreateBookingAsync(
-            eventId,
-            userId,
-            TestContext.Current.CancellationToken);
+        var booking = await service.CreateBookingAsync(eventId, userId, TestContext.Current.CancellationToken);
 
         Assert.NotEqual(Guid.Empty, booking.Id);
         Assert.Equal(eventId, booking.EventId);
@@ -91,10 +88,7 @@ public class BookingServiceTests : IDisposable
             var bookingService = createScope.ServiceProvider
                 .GetRequiredService<IBookingService>();
 
-            var booking = await bookingService.CreateBookingAsync(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                ct);
+            var booking = await bookingService.CreateBookingAsync(Guid.NewGuid(), Guid.NewGuid(), ct);
 
             bookingId = booking.Id;
         }
@@ -107,13 +101,9 @@ public class BookingServiceTests : IDisposable
             var bookingTaskQueue = processScope.ServiceProvider
                 .GetRequiredService<IBookingTaskQueue>();
 
-            var bookingService = new BookingService(
-                bookingRepository,
-                bookingTaskQueue,
-                new FailingOutboxWriter());
+            var bookingService = new BookingService(bookingRepository, bookingTaskQueue, new FailingOutboxWriter());
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                bookingService.ProcessBookingAsync(bookingId, ct));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => bookingService.ProcessBookingAsync(bookingId, ct));
         }
 
         await using var verificationScope = _provider.CreateAsyncScope();
@@ -127,8 +117,7 @@ public class BookingServiceTests : IDisposable
 
         Assert.Equal(BookingStatus.Pending, savedBooking.Status);
 
-        Assert.False(await dbContext.OutboxMessages
-            .AnyAsync(message => message.Id == bookingId, ct));
+        Assert.False(await dbContext.OutboxMessages.AnyAsync(message => message.Id == bookingId, ct));
     }
 
     [Fact]
@@ -200,8 +189,7 @@ public class BookingServiceTests : IDisposable
             await service.CreateBookingAsync(Guid.NewGuid(), userId, ct);
         }
 
-        var exception = await Assert.ThrowsAsync<AppException>(() =>
-            service.CreateBookingAsync(Guid.NewGuid(), userId, ct));
+        var exception = await Assert.ThrowsAsync<AppException>(() => service.CreateBookingAsync(Guid.NewGuid(), userId, ct));
 
         Assert.Equal(AppErrorCode.BookingLimitExceeded, exception.Code);
     }
@@ -220,10 +208,7 @@ public class BookingServiceTests : IDisposable
             await service.CreateBookingAsync(Guid.NewGuid(), firstUserId, ct);
         }
 
-        var secondUserBooking = await service.CreateBookingAsync(
-            Guid.NewGuid(),
-            secondUserId,
-            ct);
+        var secondUserBooking = await service.CreateBookingAsync(Guid.NewGuid(), secondUserId, ct);
 
         Assert.Equal(secondUserId, secondUserBooking.UserId);
     }
@@ -252,8 +237,7 @@ public class BookingServiceTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var booking = await service.CreateBookingAsync(Guid.NewGuid(), Guid.NewGuid(), ct);
 
-        var exception = await Assert.ThrowsAsync<AppException>(() =>
-            service.CancelBookingAsync(booking.Id, Guid.NewGuid(), isAdmin: false, ct));
+        var exception = await Assert.ThrowsAsync<AppException>(() => service.CancelBookingAsync(booking.Id, Guid.NewGuid(), isAdmin: false, ct));
 
         Assert.Equal(AppErrorCode.Forbidden, exception.Code);
     }
@@ -284,8 +268,7 @@ public class BookingServiceTests : IDisposable
     {
         public void Add(BookingConfirmed message)
         {
-            throw new InvalidOperationException(
-                "Имитация ошибки при записи в Outbox.");
+            throw new InvalidOperationException("Имитация ошибки при записи в Outbox.");
         }
     }
 }

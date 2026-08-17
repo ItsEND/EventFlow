@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PlatformTemplate.ServiceName.Domain\PlatformTemplate.ServiceName.Domain.csproj" />
+		<!--#if (redis) -->
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Caching\PlatformTemplate.BuildingBlocks.Caching.csproj" />
+		<!--#endif -->
+	</ItemGroup>
+
+</Project>

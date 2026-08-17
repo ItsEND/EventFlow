@@ -40,9 +40,7 @@ public class UserRepositoryTests : IDisposable
         await using var scope = _provider.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-        var user = await repository.GetByLoginAsync(
-            "missing-user",
-            TestContext.Current.CancellationToken);
+        var user = await repository.GetByLoginAsync("missing-user", TestContext.Current.CancellationToken);
 
         Assert.Null(user);
     }

@@ -38,10 +38,7 @@ public class JwtTokenGeneratorTests
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
-        var principal = new JwtSecurityTokenHandler().ValidateToken(
-            token,
-            validationParameters,
-            out var validatedToken);
+        var principal = new JwtSecurityTokenHandler().ValidateToken(token, validationParameters, out var validatedToken);
 
         Assert.NotNull(validatedToken);
         Assert.Equal(user.Id.ToString(), principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);

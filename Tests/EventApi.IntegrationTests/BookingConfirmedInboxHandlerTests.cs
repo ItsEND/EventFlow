@@ -21,12 +21,7 @@ public sealed class BookingConfirmedInboxHandlerTests
     {
         var ct = TestContext.Current.CancellationToken;
 
-        var ev = Event.Create(
-            title: "Inbox test event",
-            description: null,
-            totalSeats: 5,
-            startAt: Utc(2030, 1, 1, 10, 0),
-            endAt: Utc(2030, 1, 1, 12, 0));
+        var ev = Event.Create(title: "Inbox test event", description: null, totalSeats: 5, startAt: Utc(2030, 1, 1, 10, 0), endAt: Utc(2030, 1, 1, 12, 0));
 
         await using (var seedContext = CreateEventsContext())
         {
@@ -34,26 +29,19 @@ public sealed class BookingConfirmedInboxHandlerTests
             await seedContext.SaveChangesAsync(ct);
         }
 
-        var message = new BookingConfirmed(
-            BookingId: Guid.NewGuid(),
-            EventId: ev.Id,
-            UserId: Guid.NewGuid(),
-            SeatCount: 1,
-            ConfirmedAt: DateTime.UtcNow);
+        var message = new BookingConfirmed(BookingId: Guid.NewGuid(), EventId: ev.Id, UserId: Guid.NewGuid(), SeatCount: 1, ConfirmedAt: DateTime.UtcNow);
 
         var cache = new RecordingCacheService();
         await using (var firstContext = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(firstContext, cache,
-                NullLogger<BookingConfirmedInboxHandler>.Instance);
+            var handler = new BookingConfirmedInboxHandler(firstContext, cache, NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
         }
 
         await using (var secondContext = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(secondContext, cache,
-                NullLogger<BookingConfirmedInboxHandler>.Instance);
+            var handler = new BookingConfirmedInboxHandler(secondContext, cache, NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
         }
@@ -61,12 +49,10 @@ public sealed class BookingConfirmedInboxHandlerTests
         await using var verifyContext = CreateEventsContext();
 
         var savedEvent = await verifyContext.Events.AsNoTracking()
-            .SingleAsync(currentEvent => currentEvent.Id == ev.Id,
-                ct);
+            .SingleAsync(currentEvent => currentEvent.Id == ev.Id, ct);
 
         var inboxMessage = await verifyContext.InboxMessages.AsNoTracking()
-            .SingleAsync(inbox => inbox.MessageId == message.BookingId,
-                ct);
+            .SingleAsync(inbox => inbox.MessageId == message.BookingId, ct);
 
         Assert.Equal(4, savedEvent.AvailableSeats);
 
@@ -84,18 +70,11 @@ public sealed class BookingConfirmedInboxHandlerTests
         var ct = TestContext.Current.CancellationToken;
         var eventId = Guid.NewGuid();
 
-        var message = new BookingConfirmed(
-            BookingId: Guid.NewGuid(),
-            EventId: eventId,
-            UserId: Guid.NewGuid(),
-            SeatCount: 1,
-            ConfirmedAt: DateTime.UtcNow);
+        var message = new BookingConfirmed(BookingId: Guid.NewGuid(), EventId: eventId, UserId: Guid.NewGuid(), SeatCount: 1, ConfirmedAt: DateTime.UtcNow);
         var cache = new RecordingCacheService();
         await using (var context = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(
-                context, cache,
-                NullLogger<BookingConfirmedInboxHandler>.Instance);
+            var handler = new BookingConfirmedInboxHandler(context, cache, NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
         }
@@ -104,13 +83,9 @@ public sealed class BookingConfirmedInboxHandlerTests
 
         var inboxMessage = await verifyContext.InboxMessages
             .AsNoTracking()
-            .SingleAsync(
-                inbox => inbox.MessageId == message.BookingId,
-                ct);
+            .SingleAsync(inbox => inbox.MessageId == message.BookingId, ct);
 
-        Assert.Equal(
-            InboxMessageStatus.IgnoredEventNotFound,
-            inboxMessage.Status);
+        Assert.Equal(InboxMessageStatus.IgnoredEventNotFound, inboxMessage.Status);
 
         Assert.NotNull(inboxMessage.ProcessedAt);
         Assert.NotNull(inboxMessage.Details);
@@ -122,12 +97,7 @@ public sealed class BookingConfirmedInboxHandlerTests
     {
         var ct = TestContext.Current.CancellationToken;
 
-        var ev = Event.Create(
-            title: "Full event",
-            description: null,
-            totalSeats: 1,
-            startAt: Utc(2030, 2, 1, 10, 0),
-            endAt: Utc(2030, 2, 1, 12, 0));
+        var ev = Event.Create(title: "Full event", description: null, totalSeats: 1, startAt: Utc(2030, 2, 1, 10, 0), endAt: Utc(2030, 2, 1, 12, 0));
 
         await using (var seedContext = CreateEventsContext())
         {
@@ -135,19 +105,12 @@ public sealed class BookingConfirmedInboxHandlerTests
             await seedContext.SaveChangesAsync(ct);
         }
 
-        var message = new BookingConfirmed(
-            BookingId: Guid.NewGuid(),
-            EventId: ev.Id,
-            UserId: Guid.NewGuid(),
-            SeatCount: 2,
-            ConfirmedAt: DateTime.UtcNow);
+        var message = new BookingConfirmed(BookingId: Guid.NewGuid(), EventId: ev.Id, UserId: Guid.NewGuid(), SeatCount: 2, ConfirmedAt: DateTime.UtcNow);
 
         var cache = new RecordingCacheService();
         await using (var context = CreateEventsContext())
         {
-            var handler = new BookingConfirmedInboxHandler(
-                context, cache,
-                NullLogger<BookingConfirmedInboxHandler>.Instance);
+            var handler = new BookingConfirmedInboxHandler(context, cache, NullLogger<BookingConfirmedInboxHandler>.Instance);
 
             await handler.HandleAsync(message, ct);
         }
@@ -156,21 +119,15 @@ public sealed class BookingConfirmedInboxHandlerTests
 
         var savedEvent = await verifyContext.Events
             .AsNoTracking()
-            .SingleAsync(
-                currentEvent => currentEvent.Id == ev.Id,
-                ct);
+            .SingleAsync(currentEvent => currentEvent.Id == ev.Id, ct);
 
         var inboxMessage = await verifyContext.InboxMessages
             .AsNoTracking()
-            .SingleAsync(
-                inbox => inbox.MessageId == message.BookingId,
-                ct);
+            .SingleAsync(inbox => inbox.MessageId == message.BookingId, ct);
 
         Assert.Equal(1, savedEvent.AvailableSeats);
 
-        Assert.Equal(
-            InboxMessageStatus.IgnoredNotEnoughSeats,
-            inboxMessage.Status);
+        Assert.Equal(InboxMessageStatus.IgnoredNotEnoughSeats, inboxMessage.Status);
 
         Assert.NotNull(inboxMessage.ProcessedAt);
     }

@@ -48,12 +48,7 @@ public class EventCachingTests
         var repository = Substitute.For<IEventRepository>();
         var cache = Substitute.For<ICacheService>();
 
-        var entity = Event.Create(
-            "Database event",
-            null,
-            50,
-            DateTime.UtcNow.AddDays(1),
-            DateTime.UtcNow.AddDays(2));
+        var entity = Event.Create("Database event", null, 50, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
 
         var ct = CancellationToken.None;
         var key = CacheKeys.Event(entity.Id);
@@ -76,8 +71,7 @@ public class EventCachingTests
 
         await repository.Received(1).GetByIdAsync(entity.Id, ct);
 
-        await cache.Received(1).SetAsync(key,
-            Arg.Is<EventDto>(dto => dto.Id == entity.Id), ttl, ct);
+        await cache.Received(1).SetAsync(key, Arg.Is<EventDto>(dto => dto.Id == entity.Id), ttl, ct);
     }
 
     [Fact]
@@ -86,12 +80,7 @@ public class EventCachingTests
         var repository = Substitute.For<IEventRepository>();
         var cache = Substitute.For<ICacheService>();
 
-        var entity = Event.Create(
-            "Old title",
-            null,
-            20,
-            DateTime.UtcNow.AddDays(1),
-            DateTime.UtcNow.AddDays(2));
+        var entity = Event.Create("Old title", null, 20, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
 
         var ct = CancellationToken.None;
 
@@ -123,22 +112,14 @@ public class EventCachingTests
         var repository = Substitute.For<IEventRepository>();
         var cache = Substitute.For<ICacheService>();
 
-        var entity = Event.Create(
-            "Event to delete",
-            null,
-            20,
-            DateTime.UtcNow.AddDays(1),
-            DateTime.UtcNow.AddDays(2));
+        var entity = Event.Create("Event to delete", null, 20, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
 
         var ct = CancellationToken.None;
 
         repository.GetByIdAsync(entity.Id, ct)
             .Returns(Task.FromResult<Event?>(entity));
 
-        var service = new EventService(
-            repository,
-            cache,
-            Options.Create(new CacheOptions()));
+        var service = new EventService(repository, cache, Options.Create(new CacheOptions()));
 
         await service.RemoveEventAsync(entity.Id, ct);
 
@@ -177,19 +158,14 @@ public class EventCachingTests
         cache.GetAsync<List<EventDto>>(CacheKeys.TopEvents, ct)
             .Returns(Task.FromResult<List<EventDto>?>(cached));
 
-        var service = new EventService(
-            repository,
-            cache,
-            Options.Create(new CacheOptions()));
+        var service = new EventService(repository, cache, Options.Create(new CacheOptions()));
 
         var result = await service.GetTopEventsAsync(ct);
 
         Assert.Same(cached, result);
 
         await repository.DidNotReceive()
-            .GetTopEventsAsync(
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>());
+            .GetTopEventsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -200,12 +176,7 @@ public class EventCachingTests
 
         var events = new List<Event>
         {
-            Event.Create(
-                "Popular database event",
-                null,
-                100,
-                DateTime.UtcNow.AddDays(1),
-                DateTime.UtcNow.AddDays(2))
+            Event.Create("Popular database event", null, 100, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2))
         };
 
         var ct = CancellationToken.None;
@@ -233,11 +204,6 @@ public class EventCachingTests
 
         await repository.Received(1).GetTopEventsAsync(10, ct);
 
-        await cache.Received(1).SetAsync(
-            CacheKeys.TopEvents,
-            Arg.Is<List<EventDto>>(items =>
-                items.Count == 1 && items[0].Id == events[0].Id),
-            topEventsTtl,
-            ct);
+        await cache.Received(1).SetAsync(CacheKeys.TopEvents, Arg.Is<List<EventDto>>(items => items.Count == 1 && items[0].Id == events[0].Id), topEventsTtl, ct);
     }
 }

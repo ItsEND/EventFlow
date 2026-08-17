@@ -271,8 +271,7 @@ public class EventServiceTests : IDisposable
             EndAt = new DateTime(2026, 6, 1, 12, 0, 0)
         };
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
-            _eventService.CreateEventAsync(invalidEvent, CancellationToken.None));
+        await Assert.ThrowsAsync<ValidationException>(() => _eventService.CreateEventAsync(invalidEvent, CancellationToken.None));
     }
 
     [Fact]
@@ -297,89 +296,29 @@ public class EventServiceTests : IDisposable
     {
         return
         [
-            Event.Create(
-                "Конференция .NET Backend",
-                "Практики построения Web API на ASP.NET Core",
-                10,
-                new DateTime(2026, 4, 15, 10, 0, 0),
-                new DateTime(2026, 4, 15, 18, 0, 0)),
+            Event.Create("Конференция .NET Backend", "Практики построения Web API на ASP.NET Core", 10, new DateTime(2026, 4, 15, 10, 0, 0), new DateTime(2026, 4, 15, 18, 0, 0)),
 
-            Event.Create(
-                "Митап C# Junior",
-                "Разбор базовых возможностей языка C#",
-                15,
-                new DateTime(2026, 4, 16, 18, 30, 0),
-                new DateTime(2026, 4, 16, 20, 30, 0)),
+            Event.Create("Митап C# Junior", "Разбор базовых возможностей языка C#", 15, new DateTime(2026, 4, 16, 18, 30, 0), new DateTime(2026, 4, 16, 20, 30, 0)),
 
-            Event.Create(
-                "Воркшоп по LINQ",
-                "Фильтрация, группировка и проекции",
-                10,
-                new DateTime(2026, 4, 18, 11, 0, 0),
-                new DateTime(2026, 4, 18, 14, 0, 0)),
+            Event.Create("Воркшоп по LINQ", "Фильтрация, группировка и проекции", 10, new DateTime(2026, 4, 18, 11, 0, 0), new DateTime(2026, 4, 18, 14, 0, 0)),
 
-            Event.Create(
-                "Архитектура REST API",
-                "Проектирование контроллеров, DTO и сервисов",
-                41,
-                new DateTime(2026, 4, 20, 9, 30, 0),
-                new DateTime(2026, 4, 20, 12, 30, 0)),
+            Event.Create("Архитектура REST API", "Проектирование контроллеров, DTO и сервисов", 41, new DateTime(2026, 4, 20, 9, 30, 0), new DateTime(2026, 4, 20, 12, 30, 0)),
 
-            Event.Create(
-                "Конференция по тестированию",
-                "Unit-тесты, интеграционные тесты и моки",
-                10,
-                new DateTime(2026, 4, 22, 10, 0, 0),
-                new DateTime(2026, 4, 22, 17, 0, 0)),
+            Event.Create("Конференция по тестированию", "Unit-тесты, интеграционные тесты и моки", 10, new DateTime(2026, 4, 22, 10, 0, 0), new DateTime(2026, 4, 22, 17, 0, 0)),
 
-            Event.Create(
-                "SQL Meetup",
-                "Практика написания SQL-запросов",
-                5,
-                new DateTime(2026, 4, 25, 17, 0, 0),
-                new DateTime(2026, 4, 25, 19, 0, 0)),
+            Event.Create("SQL Meetup", "Практика написания SQL-запросов", 5, new DateTime(2026, 4, 25, 17, 0, 0), new DateTime(2026, 4, 25, 19, 0, 0)),
 
-            Event.Create(
-                "Docker для разработчиков",
-                "Контейнеризация приложений .NET",
-                4,
-                new DateTime(2026, 5, 2, 12, 0, 0),
-                new DateTime(2026, 5, 2, 15, 0, 0)),
+            Event.Create("Docker для разработчиков", "Контейнеризация приложений .NET", 4, new DateTime(2026, 5, 2, 12, 0, 0), new DateTime(2026, 5, 2, 15, 0, 0)),
 
-            Event.Create(
-                "Митап по ASP.NET Core",
-                "Middleware, маршрутизация и обработка ошибок",
-                999,
-                new DateTime(2026, 5, 5, 18, 0, 0),
-                new DateTime(2026, 5, 5, 20, 0, 0)),
+            Event.Create("Митап по ASP.NET Core", "Middleware, маршрутизация и обработка ошибок", 999, new DateTime(2026, 5, 5, 18, 0, 0), new DateTime(2026, 5, 5, 20, 0, 0)),
 
-            Event.Create(
-                "Воркшоп Swagger/OpenAPI",
-                "Документирование и тестирование API",
-                1,
-                new DateTime(2026, 5, 8, 14, 0, 0),
-                new DateTime(2026, 5, 8, 16, 30, 0)),
+            Event.Create("Воркшоп Swagger/OpenAPI", "Документирование и тестирование API", 1, new DateTime(2026, 5, 8, 14, 0, 0), new DateTime(2026, 5, 8, 16, 30, 0)),
 
-            Event.Create(
-                "Конференция Clean Code",
-                "Чистый код, читаемость и поддерживаемость",
-                10,
-                new DateTime(2026, 5, 12, 10, 0, 0),
-                new DateTime(2026, 5, 12, 18, 0, 0)),
+            Event.Create("Конференция Clean Code", "Чистый код, читаемость и поддерживаемость", 10, new DateTime(2026, 5, 12, 10, 0, 0), new DateTime(2026, 5, 12, 18, 0, 0)),
 
-            Event.Create(
-                "Практика по пагинации",
-                "Skip, Take и работа с коллекциями",
-                5,
-                new DateTime(2026, 5, 15, 13, 0, 0),
-                new DateTime(2026, 5, 15, 15, 0, 0)),
+            Event.Create("Практика по пагинации", "Skip, Take и работа с коллекциями", 5, new DateTime(2026, 5, 15, 13, 0, 0), new DateTime(2026, 5, 15, 15, 0, 0)),
 
-            Event.Create(
-                "Финальный митап спринта",
-                "Подведение итогов и разбор проекта",
-                6,
-                new DateTime(2026, 5, 20, 19, 0, 0),
-                new DateTime(2026, 5, 20, 21, 0, 0))
+            Event.Create("Финальный митап спринта", "Подведение итогов и разбор проекта", 6, new DateTime(2026, 5, 20, 19, 0, 0), new DateTime(2026, 5, 20, 21, 0, 0))
         ];
     }
 }

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "EventFlow",
+  "classifications": [
+    "Web",
+    "Service",
+    "Clean Architecture"
+  ],
+  "identity": "EventFlow.Platform.Templates.Service",
+  "name": "EventFlow Platform Service",
+  "shortName": "platform-service",
+  "description": "Добавляет слоистый сервис и его Unit/Integration-тесты в platform-sln решение.",
+  "sourceName": "ServiceName",
+  "preferNameDirectory": false,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!HasDatabase)",
+          "exclude": [
+            "**/DataAccess/**",
+            "**/Repositories/EfServiceNameItemRepository.cs",
+            "**/Repositories/EfUnitOfWork.cs"
+          ]
+        },
+        {
+          "condition": "(HasDatabase)",
+          "exclude": [
+            "**/Repositories/InMemoryServiceNameItemRepository.cs",
+            "**/Repositories/InMemoryUnitOfWork.cs"
+          ]
+        },
+        {
+          "condition": "(!UseOutbox)",
+          "exclude": [
+            "**/Abstractions/Messaging/**",
+            "**/Contracts/Events/**",
+            "**/Messaging/Outbox/**"
+          ]
+        },
+        {
+          "condition": "(!UseInbox)",
+          "exclude": [
+            "**/Messaging/Inbox/**"
+          ]
+        }
+      ]
+    }
+  ],
+  "symbols": {
+    "product": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "PlatformTemplate",
+      "description": "Корневое имя продукта и namespace.",
+      "replaces": "PlatformTemplate",
+      "fileRename": "PlatformTemplate"
+    },
+    "database": {
+      "type": "parameter",
+      "datatype": "choice",
+      "defaultValue": "postgresql",
+      "description": "Провайдер базы данных.",
+      "choices": [
+        {
+          "choice": "postgresql",
+          "description": "PostgreSQL и EF Core"
+        },
+        {
+          "choice": "sqlserver",
+          "description": "Microsoft SQL Server и EF Core"
+        },
+        {
+          "choice": "none",
+          "description": "Без EF Core; in-memory repository для каркаса"
+        }
+      ]
+    },
+    "PostgreSql": {
+      "type": "computed",
+      "value": "(database == 'postgresql')"
+    },
+    "SqlServer": {
+      "type": "computed",
+      "value": "(database == 'sqlserver')"
+    },
+    "HasDatabase": {
+      "type": "computed",
+      "value": "(PostgreSql || SqlServer)"
+    },
+    "redis": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Подключить Redis cache-aside."
+    },
+    "kafka": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Подключить Kafka publisher."
+    },
+    "outbox": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Создать Outbox и фоновую публикацию. Требует Kafka и БД."
+    },
+    "inbox": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Создать Inbox-модель. Требует Kafka и БД."
+    },
+    "UseOutbox": {
+      "type": "computed",
+      "value": "(kafka && outbox && HasDatabase)"
+    },
+    "UseInbox": {
+      "type": "computed",
+      "value": "(kafka && inbox && HasDatabase)"
+    },
+    "httpPort": {
+      "type": "parameter",
+      "datatype": "integer",
+      "defaultValue": "5100",
+      "description": "Локальный HTTP-порт API.",
+      "replaces": "__HTTP_PORT__"
+    }
+  }
+}

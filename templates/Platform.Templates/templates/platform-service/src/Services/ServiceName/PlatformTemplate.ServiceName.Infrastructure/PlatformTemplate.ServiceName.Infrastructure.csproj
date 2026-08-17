@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<!--#if (HasDatabase) -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+		<!--#endif -->
+		<!--#if (PostgreSql) -->
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+		<!--#endif -->
+		<!--#if (SqlServer) -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<!--#endif -->
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference
+			Include="..\PlatformTemplate.ServiceName.Application\PlatformTemplate.ServiceName.Application.csproj" />
+		<ProjectReference Include="..\PlatformTemplate.ServiceName.Domain\PlatformTemplate.ServiceName.Domain.csproj" />
+		<!--#if (redis) -->
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Caching\PlatformTemplate.BuildingBlocks.Caching.csproj" />
+		<!--#endif -->
+		<!--#if (kafka) -->
+		<ProjectReference
+			Include="..\..\..\BuildingBlocks\PlatformTemplate.BuildingBlocks.Messaging\PlatformTemplate.BuildingBlocks.Messaging.csproj" />
+		<!--#endif -->
+	</ItemGroup>
+
+</Project>

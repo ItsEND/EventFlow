@@ -410,3 +410,25 @@ dotnet test Tests/EventApi.IntegrationTests/EventApi.IntegrationTests.csproj
 ```
 
 Тесты проверяют основные сценарии сервисов, попадание и промах кеша, TTL, инвалидацию после изменения события, сортировку топа по проценту проданных мест, создание Outbox-сообщения, атомарность подтверждения брони и Outbox, а также идемпотентную обработку повторных `BookingConfirmed` через Inbox.
+
+## Генератор новых решений
+
+Архитектура EventFlow оформлена как пакет шаблонов `dotnet new`. Пакет создаёт нейтральное решение, не связанное с предметной областью мероприятий.
+
+Установка локальной версии шаблонов:
+
+```powershell
+.\eng\Install-PlatformTemplates.ps1
+```
+
+Создание решения и первого сервиса:
+
+```powershell
+dotnet new platform-sln -n Sample.Platform
+cd Sample.Platform
+.\eng\Add-Service.ps1 -Name Catalog
+```
+
+В новом решении автоматически создаются общие блоки API, JWT-аутентификации, OpenTelemetry/Serilog, Redis и Kafka. Каждый сервис получает проекты `Api`, `Application`, `Domain`, `Infrastructure`, Unit- и Integration-тесты. PostgreSQL используется по умолчанию; также поддерживаются `-Database sqlserver` и `-Database none`.
+
+Исходники и подробное описание находятся в [`templates/Platform.Templates`](templates/Platform.Templates/README.md).

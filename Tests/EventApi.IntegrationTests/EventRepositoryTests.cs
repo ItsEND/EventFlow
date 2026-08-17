@@ -151,12 +151,7 @@ public class EventRepositoryTests : RepositoryTestBase
         };
 
         var events = popularity
-            .Select((seats, index) => Event.Create(
-                $"Popularity {index}",
-                description: null,
-                seats.TotalSeats,
-                Utc(2030, 1, 1, 10),
-                Utc(2030, 1, 1, 12)))
+            .Select((seats, index) => Event.Create($"Popularity {index}", description: null, seats.TotalSeats, Utc(2030, 1, 1, 10), Utc(2030, 1, 1, 12)))
             .ToList();
 
         for (var index = 0; index < events.Count; index++)
@@ -172,14 +167,10 @@ public class EventRepositoryTests : RepositoryTestBase
         await using var context = CreateEventsContext();
         var repository = new EventRepository(context);
 
-        var result = await repository.GetTopEventsAsync(
-            10,
-            TestContext.Current.CancellationToken);
+        var result = await repository.GetTopEventsAsync(10, TestContext.Current.CancellationToken);
 
         Assert.Equal(10, result.Count);
-        Assert.Equal(
-            events.Take(10).Select(ev => ev.Id),
-            result.Select(ev => ev.Id));
+        Assert.Equal(events.Take(10).Select(ev => ev.Id), result.Select(ev => ev.Id));
     }
 
     public static TheoryData<string?, DateTime?, DateTime?, string[]> FilterCases

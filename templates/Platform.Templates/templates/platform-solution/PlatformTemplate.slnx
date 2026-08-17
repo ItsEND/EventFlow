@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/PlatformTemplate.BuildingBlocks.Api/PlatformTemplate.BuildingBlocks.Api.csproj" />
+    <Project Path="src/BuildingBlocks/PlatformTemplate.BuildingBlocks.Authentication/PlatformTemplate.BuildingBlocks.Authentication.csproj" />
+    <Project Path="src/BuildingBlocks/PlatformTemplate.BuildingBlocks.Caching/PlatformTemplate.BuildingBlocks.Caching.csproj" />
+    <Project Path="src/BuildingBlocks/PlatformTemplate.BuildingBlocks.Messaging/PlatformTemplate.BuildingBlocks.Messaging.csproj" />
+    <Project Path="src/BuildingBlocks/PlatformTemplate.BuildingBlocks.Observability/PlatformTemplate.BuildingBlocks.Observability.csproj" />
+  </Folder>
+  <Folder Name="/Services/" />
+  <Folder Name="/Shared/">
+    <Project Path="src/Shared/PlatformTemplate.Contracts/PlatformTemplate.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Folder Name="/Tests/Integration/" />
+    <Folder Name="/Tests/Unit/" />
+  </Folder>
+</Solution>

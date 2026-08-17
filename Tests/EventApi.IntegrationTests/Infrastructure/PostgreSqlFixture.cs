@@ -31,9 +31,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public EventDbContext CreateEventsContext()
     {
         var options = new DbContextOptionsBuilder<EventDbContext>()
-            .UseNpgsql(
-                ConnectionString(EventsDatabase),
-                options => options.UseAdminDatabase(AdminDatabase))
+            .UseNpgsql(ConnectionString(EventsDatabase), options => options.UseAdminDatabase(AdminDatabase))
             .Options;
 
         return new EventDbContext(options);
@@ -42,9 +40,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public BookingDbContext CreateBookingsContext()
     {
         var options = new DbContextOptionsBuilder<BookingDbContext>()
-            .UseNpgsql(
-                ConnectionString(BookingsDatabase),
-                options => options.UseAdminDatabase(AdminDatabase))
+            .UseNpgsql(ConnectionString(BookingsDatabase), options => options.UseAdminDatabase(AdminDatabase))
             .Options;
 
         return new BookingDbContext(options);
@@ -53,9 +49,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public UsersDbContext CreateUsersContext()
     {
         var options = new DbContextOptionsBuilder<UsersDbContext>()
-            .UseNpgsql(
-                ConnectionString(UsersDatabase),
-                options => options.UseAdminDatabase(AdminDatabase))
+            .UseNpgsql(ConnectionString(UsersDatabase), options => options.UseAdminDatabase(AdminDatabase))
             .Options;
 
         return new UsersDbContext(options);
@@ -78,9 +72,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         return builder.ConnectionString;
     }
 
-    private static async Task ResetDatabaseAsync<TContext>(
-        Func<TContext> contextFactory,
-        CancellationToken cancellationToken)
+    private static async Task ResetDatabaseAsync<TContext>(Func<TContext> contextFactory, CancellationToken cancellationToken)
         where TContext : DbContext
     {
         await using var context = contextFactory();
